@@ -1,0 +1,44 @@
+<svg width="700" height="820" viewBox="0 0 700 820" xmlns="http://www.w3.org/2000/svg" font-family="'Times New Roman', 'Cambria', serif">
+  <rect width="700" height="820" fill="#ffffff"/>
+
+  <g fill="#111111">
+    <!-- Quốc hiệu -->
+    <text x="350" y="50" font-size="18" font-weight="700" text-anchor="middle">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</text>
+    <text x="350" y="80" font-size="15" font-weight="700" text-anchor="middle">Độc lập – Tự do – Hạnh phúc</text>
+    <text x="350" y="106" font-size="13" text-anchor="middle">——o0o——</text>
+
+    <!-- Ngày phải -->
+    <text x="650" y="142" font-size="13" text-anchor="end">…………., ngày… tháng…. năm…..</text>
+
+    <!-- Tiêu đề đơn -->
+    <text x="350" y="184" font-size="17" font-weight="700" text-anchor="middle">ĐƠN XIN XÁC NHẬN LƯU TRÚ</text>
+
+    <!-- Nội dung -->
+    <g font-size="13.5">
+      <text x="50" y="220">Căn cứ Luật Cư trú 2020;</text>
+      <text x="50" y="252">Kính gửi: Công an xã/phường ........................, tỉnh/thành phố ..........................</text>
+      <text x="50" y="284">Tên tôi là: ..................................................Sinh ngày: ....................................</text>
+      <text x="50" y="316">CMND/CCCD/Hộ chiếu số: .....................  cấp ngày .............. tại ....................</text>
+      <text x="50" y="348">Hộ khẩu thường trú: .........................................................................................</text>
+      <text x="50" y="380">Chỗ ở hiện nay: ..............................................................................................</text>
+
+      <text x="50" y="418">Vào ngày ...../...../........, tôi đã đến ........................................ địa chỉ ..................</text>
+      <text x="50" y="440">.......................................................... và lưu trú tại địa phương trong một khoảng thời gian từ ngày</text>
+      <text x="50" y="462">……/……/……  đến ngày ……/……/…… Trong thời gian này, tôi cùng chủ nhà là</text>
+      <text x="50" y="484">ông/bà............. đã đến quý cơ quan khai báo và đăng ký lưu trú theo quy định pháp luật.</text>
+
+      <text x="50" y="520">Do đó, căn cứ Điều 30 Luật Cư trú 2020, tôi làm đơn này, xin xác nhận về việc tôi có</text>
+      <text x="50" y="542">lưu trú trong khoảng thời gian từ ngày ……/……/…… đến ngày ……/……/…… tại</text>
+      <text x="50" y="564">........................................................... và kính đề nghị quý cơ quan xác nhận nội dung,</text>
+      <text x="50" y="586">thông tin nêu trên.</text>
+
+      <text x="50" y="622">Kính mong quý cơ quan xem xét, giúp đỡ.</text>
+      <text x="50" y="650">Tôi xin chân thành cảm ơn.</text>
+    </g>
+
+    <!-- Ký tên -->
+    <text x="50" y="702" font-size="13.5" font-weight="700">Xác nhận của công an xã phường…</text>
+    <text x="430" y="702" font-size="13.5" font-weight="700">Người làm đơn</text>
+    <text x="430" y="724" font-size="12" font-style="italic">(Ký và ghi rõ họ tên)</text>
+  </g>
+</svg>

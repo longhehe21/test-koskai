@@ -1,0 +1,206 @@
+/* ===== Lưu trú — Hồ sơ đính kèm (modal) =====
+   Modal scoped vào #right-panel (feedback_modal_scoping — AI panel vẫn sáng & interactive).
+   Click card "Lưu trú" ở cu-tru.ts → openLuuTruHoSoModal() mở modal này. */
+.ltrhsm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+  overflow-y: auto;
+}
+
+.ltrhsm-overlay--visible {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.ltrhsm-modal {
+  width: 100%;
+  max-width: 620px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.ltrhsm-overlay--visible .ltrhsm-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* Khi .ltrhs-area ở bên trong modal → bỏ layout full-height vì modal tự layout. */
+.ltrhsm-modal .ltrhs-area {
+  min-height: 0;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+}
+
+/* ===== Lưu trú — Hồ sơ đính kèm ===== */
+.ltrhs-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px;
+  overflow-y: auto;
+}
+
+.ltrhs-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e3a8a;
+  text-align: center;
+  margin-bottom: 28px;
+  letter-spacing: 0.5px;
+}
+
+.ltrhs-question {
+  width: 100%;
+  max-width: 560px;
+  background: #f1f5fb;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ltrhs-question-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ltrhs-question-text {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.ltrhs-question-text strong {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.ltrhs-view-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #2563eb;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: opacity 0.2s;
+}
+
+.ltrhs-view-form:hover {
+  opacity: 0.8;
+}
+
+.ltrhs-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ltrhs-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ltrhs-option--inactive {
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  color: #6b7280;
+}
+
+.ltrhs-option--inactive:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.ltrhs-option--active {
+  background: #2563eb;
+  border: 1.5px solid #2563eb;
+  color: #ffffff;
+}
+
+.ltrhs-option--active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.ltrhs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+/* Button base — unified với canonical .hktrh-btn (pill 44px). */
+.ltrhs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.ltrhs-btn--back {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.ltrhs-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.ltrhs-btn--next {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.ltrhs-btn--next:hover:not(.ltrhs-btn--disabled) {
+  background: #1d4ed8;
+}
+
+.ltrhs-btn--disabled {
+  background: #93b6f0;
+  cursor: not-allowed;
+  opacity: 0.75;
+}

@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+build/
+*.exe
+*.dmg
+*.AppImage
+
+# Environment
+.env
+.env.*
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude local settings
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Keys & Certs
+*.key
+*.pem
+
+# Drizzle
+drizzle/meta/
+
+# Electron
+release/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker volumes
+postgres-data/
+minio-data/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Python
+ai-engine/__pycache__/
+ai-engine/.venv/

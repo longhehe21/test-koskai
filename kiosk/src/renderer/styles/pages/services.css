@@ -1,0 +1,112 @@
+/* ===== Services Page ===== */
+.services-area {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.services-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+/* Service Card */
+.service-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 18px;
+  background: #ffffff;
+  border: 1.5px solid #f0f0f0;
+  border-radius: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  color: var(--icon-stroke);
+}
+
+.service-card:hover {
+  border-color: #d0d5dd;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.service-card:active {
+  transform: scale(0.99);
+}
+
+/* Active / selected card */
+.service-card-active {
+  background: linear-gradient(135deg, #3b6de6 0%, #2550cc 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(37, 80, 204, 0.25);
+}
+
+.service-card-active .service-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.service-card-active .service-icon svg {
+  stroke: #ffffff !important;
+}
+
+.service-card-active .service-title {
+  color: #ffffff;
+}
+
+.service-card-active .service-desc {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Icon */
+.service-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--icon-bg);
+  color: var(--icon-stroke);
+}
+
+.service-icon svg {
+  stroke: var(--icon-stroke);
+}
+
+/* Info */
+.service-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.service-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  transition: color 0.2s;
+}
+
+.service-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.4;
+  transition: color 0.2s;
+}

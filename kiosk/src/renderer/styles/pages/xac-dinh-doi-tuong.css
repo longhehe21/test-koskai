@@ -1,0 +1,503 @@
+/* ===== Xác định đối tượng cư trú ===== */
+.xddt-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px 20px 40px;
+  overflow-y: auto;
+}
+
+.xddt-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.xddt-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 32px;
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.xddt-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 820px;
+}
+
+.xddt-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.xddt-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.xddt-btn-back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.xddt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #e8ecf1;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.xddt-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.xddt-card-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.xddt-icons-small {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.xddt-icon-sm {
+  width: 48px;
+  height: auto;
+}
+
+.xddt-icon-lg {
+  width: 72px;
+  height: auto;
+}
+
+.xddt-icon-khien {
+  width: 56px;
+}
+
+.xddt-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.xddt-card-desc {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.7;
+}
+
+.xddt-card-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+  margin-top: auto;
+  transition: color 0.2s;
+}
+
+.xddt-card-link:hover {
+  color: #1d4ed8;
+}
+
+/* ===== Modal: Hồ sơ đính kèm ===== */
+/* Scoped to #right-panel (feedback_modal_scoping): AI panel trái vẫn sáng & tương tác được. */
+.hsdk-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+}
+
+.hsdk-overlay--visible {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.hsdk-modal {
+  background: #f5f5f7;
+  border-radius: 24px;
+  padding: 40px 44px 36px;
+  width: 100%;
+  max-width: 620px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.hsdk-overlay--visible .hsdk-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.hsdk-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e3a8a;
+  text-align: center;
+  margin-bottom: 28px;
+  letter-spacing: 0.5px;
+}
+
+.hsdk-question {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  margin-bottom: 16px;
+}
+
+.hsdk-question-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hsdk-question-text {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.hsdk-question-text strong {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.hsdk-view-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #2563eb;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: opacity 0.2s;
+}
+
+.hsdk-view-form:hover {
+  opacity: 0.8;
+}
+
+.hsdk-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hsdk-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hsdk-option--inactive {
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  color: #6b7280;
+}
+
+.hsdk-option--inactive:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.hsdk-option--active {
+  background: #2563eb;
+  border: 1.5px solid #2563eb;
+  color: #ffffff;
+}
+
+.hsdk-option--active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Footer */
+.hsdk-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+/* Button base — unified with .hktrh-btn / .hkhsdk-btn canonical (pill 44px). */
+.hsdk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.hsdk-btn--back {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.hsdk-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.hsdk-btn--next {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.hsdk-btn--next:hover:not(.hsdk-btn--disabled) {
+  background: #1d4ed8;
+}
+
+.hsdk-btn--disabled {
+  background: #93b6f0;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+/* ===== Confirm: Không có văn bản đồng ý ===== */
+.confirm-novb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.25s ease;
+}
+
+.confirm-novb-overlay--visible {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.confirm-novb-modal {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 36px 40px 32px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+  text-align: center;
+}
+
+.confirm-novb-overlay--visible .confirm-novb-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.confirm-novb-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.confirm-novb-close:hover {
+  background: #fef2f2;
+}
+
+.confirm-novb-icon {
+  margin-bottom: 16px;
+}
+
+.confirm-novb-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.confirm-novb-text {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.confirm-novb-highlight {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.confirm-novb-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Unified canonical pill 44px — match .hktrh-btn. */
+.confirm-novb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.confirm-novb-btn--back {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.confirm-novb-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.confirm-novb-btn--next {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.confirm-novb-btn--next:hover {
+  background: #1d4ed8;
+}
+
+/* ===== Preview mẫu đơn ===== */
+/* Scoped to #right-panel — z-index cao hơn .hsdk-overlay để preview lên trên modal HSĐK. */
+.maudon-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+}
+
+.maudon-overlay--visible {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.maudon-container {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.maudon-overlay--visible .maudon-container {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.maudon-image {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.maudon-close {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s, transform 0.2s;
+  z-index: 1;
+}
+
+.maudon-close:hover {
+  background: #f3f4f6;
+  transform: scale(1.1);
+}

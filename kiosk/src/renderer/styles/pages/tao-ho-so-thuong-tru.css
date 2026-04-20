@@ -1,0 +1,418 @@
+/* ===== Tạo hồ sơ đăng ký thường trú ===== */
+/* Reuses tkbtv-* base styles; only adds specific new elements. */
+
+.tkbtv-area:has(.thtt-commit) .tkbtv-page-title {
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.tkbtv-page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+  margin: -12px 0 24px;
+}
+
+/* Stack variant for radio group */
+.tkbtv-radio-group--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Disabled radio */
+.tkbtv-radio--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tkbtv-radio--disabled .tkbtv-radio-dot {
+  border-color: #cbd5e1 !important;
+}
+
+/* Select placeholder text */
+.tkbtv-select-placeholder {
+  color: #9ca3af !important;
+}
+
+/* ===== Multi-select with tags inside the box ===== */
+.thtt-multi-inline .tkbtv-select {
+  flex-wrap: wrap;
+  min-height: 44px;
+  gap: 6px;
+  padding: 7px 14px;
+}
+
+.thtt-multi-inline .tkbtv-multi-tags {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0;
+  flex: 1;
+  align-items: center;
+  min-height: 28px;
+}
+
+.thtt-multi-inline .tkbtv-multi-tags:empty + .thtt-multi-placeholder {
+  display: inline-block;
+}
+
+.thtt-multi-inline .tkbtv-multi-tags:not(:empty) + .thtt-multi-placeholder {
+  display: none;
+}
+
+.thtt-multi-placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+  flex: 1;
+}
+
+.thtt-multi-inline .tkbtv-select svg {
+  flex-shrink: 0;
+}
+
+/* Ensure multi-select and single-select take full width of their half column */
+.tkbtv-field--half > .tkbtv-multi-select,
+.tkbtv-field--half > .tkbtv-select-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Match single-select height to multi-select in section VI */
+#s6-ketqua .tkbtv-select {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* Move ✕ icon to the right side of the tag */
+.thtt-multi-inline .tkbtv-tag::before {
+  content: none;
+}
+
+.thtt-multi-inline .tkbtv-tag::after {
+  content: '✕';
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* ===== VK photo 4x6 (Section III) =====
+   Layout: cột trái chứa passport name + dân tộc/tôn giáo/quốc tịch; cột phải là ảnh 4x6.
+   Tương lai scan sẽ fill vào #s3vk-photo (thay placeholder bằng <img />). */
+.thtt-vk-photo-row {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.thtt-vk-photo-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.thtt-photo-box {
+  flex: 0 0 150px;
+  aspect-ratio: 4 / 6;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  align-self: stretch;
+  overflow: hidden;
+}
+
+.thtt-photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thtt-photo-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ===== Table ===== */
+.thtt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+.thtt-table thead tr {
+  background: #e7edf7;
+}
+
+.thtt-table th {
+  padding: 12px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.3px;
+  text-align: left;
+  border-bottom: 1px solid #d7dfea;
+}
+
+.thtt-table td {
+  padding: 14px 10px;
+  font-size: 13px;
+  color: #64748b;
+  border-bottom: 1px solid #eef1f5;
+  background: #ffffff;
+}
+
+.thtt-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.thtt-table-index {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.thtt-table-index:hover {
+  text-decoration: underline;
+}
+
+.thtt-add-btn,
+.thtt-del-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.thtt-add-btn:hover,
+.thtt-del-btn:hover {
+  transform: scale(1.12);
+}
+
+/* Action cell trong VK table (cột THAO TÁC có 2 button +/🗑). */
+.thtt-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* VK table: input nhỏ gọn hơn để fit nhiều cột. */
+/* table-layout: fixed → các cột chia đều không gian, input width:100% bên trong fill đúng cell
+   (display:block + white-space:nowrap đã gây ra intrinsic-size cell, khiến input không stretch). */
+.thtt-table--vk {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+.thtt-table--vk th {
+  font-size: 10px;
+  padding: 10px 6px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.thtt-table--vk td {
+  padding: 8px 6px;
+}
+
+.thtt-table--vk input.tkbtv-input {
+  min-width: 0;
+}
+
+/* Ẩn nút thùng rác khi chỉ có 1 row — chỉ hiện khi có ≥2 rows.
+   Áp dụng cho mọi table dynamic-row (attr data-vk-table): VK sinh-song/gia-dinh,
+   VN s3vn-thanh-vien, Section V s5-xin-y-kien. */
+table[data-vk-table] tbody tr:only-child .thtt-del-btn {
+  display: none;
+}
+
+.tkbtv-input--xs {
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+}
+
+/* Heading dạng label trên 1 table (tách visually khỏi các row field thường). */
+.thtt-table-heading {
+  font-weight: 700 !important;
+  color: #0f172a;
+  margin-top: 6px;
+}
+
+/* ===== Note text (section V) ===== */
+.thtt-note {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+/* ===== VNeID row ===== */
+.thtt-vneid-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.thtt-vneid-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.thtt-vneid-btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.thtt-vneid-btn:hover {
+  background: #b91c1c;
+}
+
+/* ===== Fee card (section VII) ===== */
+.thtt-fee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #eff4fb;
+  border: 1px solid #dbe4f2;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.thtt-fee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.thtt-fee-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.thtt-fee-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.thtt-fee-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+/* ===== Commitment checkbox ===== */
+.thtt-commit {
+  margin-top: 6px;
+  padding: 14px 18px;
+  background: #ffffff;
+  border: 1px solid #e5e9ef;
+  border-radius: 12px;
+}
+
+.thtt-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.thtt-checkbox input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.thtt-checkbox-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.thtt-checkbox input:checked ~ .thtt-checkbox-box {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.thtt-checkbox input:checked ~ .thtt-checkbox-box::after {
+  content: '';
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.thtt-checkbox-text {
+  font-size: 13px;
+  color: #334155;
+}
+
+/* Variant nhỏ gọn dùng inline trong form (vd. Section II "CD Việt Nam định cư nước ngoài…"). */
+.thtt-checkbox--inline {
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.thtt-checkbox-text--sm {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* Submit button disabled state */
+.tkbtv-footer-btn--submit.tkbtv-footer-btn--disabled,
+.tkbtv-footer-btn--submit:disabled {
+  background: #93b6f0;
+  border-color: #93b6f0;
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}

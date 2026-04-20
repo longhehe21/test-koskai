@@ -1,0 +1,18 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+const electronAPI = {
+  invoke: (channel: string, ...args: unknown[]) =>
+    ipcRenderer.invoke(channel, ...args),
+
+  on: (channel: string, callback: (...args: unknown[]) => void) => {
+    ipcRenderer.on(channel, (_event, ...args) => callback(...args));
+  },
+
+  removeAllListeners: (channel: string) => {
+    ipcRenderer.removeAllListeners(channel);
+  },
+};
+
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+
+export type ElectronAPI = typeof electronAPI;

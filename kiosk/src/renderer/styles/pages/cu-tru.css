@@ -1,0 +1,108 @@
+/* ===== Cư trú & Giấy tờ Page ===== */
+.cutru-area {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cutru-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.cutru-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+/* Card base */
+.cutru-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1.5px solid #e8ecf1;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cutru-card:hover {
+  border-color: #d0d5dd;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Icon */
+.cutru-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  color: #3b82f6;
+  transition: all 0.2s ease;
+}
+
+.cutru-icon svg {
+  stroke: #3b82f6;
+  transition: stroke 0.2s ease;
+}
+
+/* Card title */
+.cutru-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  transition: color 0.2s ease;
+}
+
+/* Explore link */
+.cutru-explore-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.cutru-explore-link:hover {
+  color: #2563eb;
+}
+
+/* ===== Active card (click to activate) ===== */
+.cutru-card-active {
+  border-color: #f97316;
+  border-left-width: 4px;
+  background: #ffffff;
+}
+
+.cutru-card-active .cutru-icon {
+  background: #fff7ed;
+  color: #f97316;
+}
+
+.cutru-card-active .cutru-icon svg {
+  stroke: #f97316;
+}
+
+.cutru-card-active .cutru-card-title {
+  color: #f97316;
+}
+
+.cutru-card-active .cutru-explore-link {
+  color: #f97316;
+}

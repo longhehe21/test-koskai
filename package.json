@@ -1,0 +1,41 @@
+{
+  "name": "kiosk-ai",
+  "private": true,
+  "version": "0.0.1",
+  "description": "AI Kiosk Hanh Chinh Cong",
+  "workspaces": [
+    "kiosk"
+  ],
+  "_comment_disabledWorkspaces": "shared + server tạm disable trong giai đoạn UI-only. Restore khi bật lại backend: thêm 'shared' và 'server' vào workspaces, khôi phục @kiosk-ai/shared trong kiosk/package.json.",
+  "_disabledWorkspaces": [
+    "shared",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=kiosk",
+    "dev:server": "npm run dev --workspace=server",
+    "build:kiosk": "npm run build --workspace=kiosk",
+    "build:server": "npm run build --workspace=server",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate --workspace=server",
+    "db:studio": "npm run db:studio --workspace=server",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.0.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

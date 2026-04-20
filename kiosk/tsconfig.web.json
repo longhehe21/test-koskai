@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out/renderer",
+    "module": "ESNext",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "composite": true,
+    "paths": {
+      "@renderer/*": ["./src/renderer/*"],
+      "@components/*": ["./src/renderer/components/*"],
+      "@pages/*": ["./src/renderer/pages/*"],
+      "@services/*": ["./src/renderer/services/*"],
+      "@store/*": ["./src/renderer/store/*"],
+      "@styles/*": ["./src/renderer/styles/*"],
+      "@assets/*": ["./public/assets/*"],
+      "@hooks/*": ["./src/renderer/hooks/*"]
+    }
+  },
+  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.tsx"]
+}

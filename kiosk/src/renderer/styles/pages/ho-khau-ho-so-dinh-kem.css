@@ -1,0 +1,403 @@
+/* ===== Hộ khẩu - Hồ sơ đính kèm (modal) =====
+   Modal overlay (scoped to #right-panel theo feedback_modal_scoping — giữ AI panel interactive).
+   Dùng cho util openHoSoDinhKemModal trigger từ card ho-khau-truong-hop. */
+.hkhsdkm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+  overflow-y: auto;
+}
+
+.hkhsdkm-overlay--visible {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.hkhsdkm-modal {
+  width: 100%;
+  max-width: 760px;
+  max-height: 100%;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 28px 32px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+  overflow-y: auto;
+}
+
+.hkhsdkm-overlay--visible .hkhsdkm-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* ===== Hộ khẩu - Hồ sơ đính kèm ===== */
+.hkhsdk-area {
+  width: 100%;
+  max-width: 820px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+/* Khi .hkhsdk-area ở bên trong modal → bỏ padding/min-height vì modal tự layout. */
+.hkhsdkm-modal .hkhsdk-area {
+  max-width: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.hkhsdkm-modal .hkhsdk-title {
+  font-size: 24px;
+  margin: 0 0 18px;
+}
+
+.hkhsdkm-modal .hkhsdk-question {
+  padding: 16px 18px 18px;
+  margin-bottom: 14px;
+}
+
+.hkhsdkm-modal .hkhsdk-question-text {
+  font-size: 14px;
+}
+
+.hkhsdkm-modal .hkhsdk-option {
+  padding: 12px 14px;
+}
+
+.hkhsdkm-modal .hkhsdk-footer {
+  margin-top: 4px;
+}
+
+.hkhsdk-title {
+  font-size: 34px;
+  font-weight: 800;
+  color: #2563eb;
+  text-align: center;
+  margin: 0 0 28px;
+  letter-spacing: 0.5px;
+}
+
+/* Question block */
+.hkhsdk-question {
+  width: 100%;
+  background: #eef3fa;
+  border-radius: 20px;
+  padding: 22px 24px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.hkhsdk-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hkhsdk-question-text {
+  font-size: 15px;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.hkhsdk-question-text strong {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.hkhsdk-view-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #dbe4f2;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.hkhsdk-view-form:hover {
+  background: #f5f9ff;
+  border-color: #bcd0ee;
+}
+
+/* Option buttons */
+.hkhsdk-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.hkhsdk-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #e5e9ef;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.hkhsdk-option:hover {
+  border-color: #cfd6e0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.hkhsdk-option-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f3f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+/* Icon parts (driven by active state) */
+.hkhsdk-icon-fill {
+  fill: #374151;
+  transition: fill 0.2s ease;
+}
+
+.hkhsdk-icon-stroke {
+  stroke: #6b7280;
+  fill: none;
+  transition: stroke 0.2s ease;
+}
+
+.hkhsdk-icon-stroke-inv {
+  stroke: #ffffff;
+  fill: none;
+  transition: stroke 0.2s ease;
+}
+
+.hkhsdk-option-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Active option - solid blue */
+.hkhsdk-option--active {
+  border-color: #2563eb;
+  background: #2563eb;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28), 0 2px 6px rgba(37, 99, 235, 0.18);
+}
+
+.hkhsdk-option--active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.32), 0 3px 8px rgba(37, 99, 235, 0.2);
+}
+
+.hkhsdk-option--active .hkhsdk-option-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hkhsdk-option--active .hkhsdk-icon-fill {
+  fill: #ffffff;
+}
+
+.hkhsdk-option--active .hkhsdk-icon-stroke-inv {
+  stroke: #2563eb;
+}
+
+.hkhsdk-option--active .hkhsdk-icon-stroke {
+  stroke: #ffffff;
+}
+
+.hkhsdk-option--active .hkhsdk-option-text {
+  color: #ffffff;
+}
+
+/* Footer */
+.hkhsdk-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.hkhsdk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.hkhsdk-btn--back {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.hkhsdk-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.hkhsdk-btn--next {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.hkhsdk-btn--next:hover:not(.hkhsdk-btn--disabled) {
+  background: #1d4ed8;
+}
+
+.hkhsdk-btn--disabled {
+  background: #93b6f0;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+/* Confirm modal scoped to the right panel only (AI panel stays interactive) */
+.hkhsdk-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+}
+
+.hkhsdk-confirm-overlay--visible {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.hkhsdk-confirm-overlay .confirm-novb-modal {
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.hkhsdk-confirm-overlay--visible .confirm-novb-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* Mẫu đơn preview — scoped to the right panel only */
+.hkhsdk-maudon-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0);
+  transition: background 0.25s ease;
+}
+
+.hkhsdk-maudon-overlay--visible {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.hkhsdk-maudon-container {
+  position: relative;
+  width: 92%;
+  max-width: 880px;
+  max-height: 92%;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px 20px 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.hkhsdk-maudon-overlay--visible .hkhsdk-maudon-container {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.hkhsdk-maudon-container .maudon-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s ease;
+}
+
+.hkhsdk-maudon-container .maudon-close:hover {
+  background: #e5e7eb;
+}
+
+.hkhsdk-maudon-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 8px 8px;
+}
+
+.hkhsdk-maudon-scroll .maudon-image {
+  width: 100%;
+  max-height: none;
+  display: block;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}

@@ -1,0 +1,279 @@
+/* ===== Virtual Keyboard (Light) ===== */
+
+/* Overlay - transparent, no blur, just catches clicks outside */
+.vk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.vk-overlay.vk-visible {
+  pointer-events: auto;
+}
+
+/* Container - white floating modal */
+.vk-container {
+  position: fixed;
+  left: 50%;
+  bottom: 60px;
+  z-index: 9999;
+  transform: translateX(-50%) translateY(20px);
+  width: auto;
+  max-width: 820px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 10px 16px 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.vk-container.vk-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Close button - floating top-right */
+.vk-close-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transition: background 0.15s, transform 0.15s;
+  z-index: 1;
+}
+
+.vk-close-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.vk-close-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Drag bar */
+.vk-drag-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 0 8px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.vk-drag-bar.vk-dragging {
+  cursor: grabbing;
+}
+
+.vk-drag-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #d1d5db;
+  transition: background 0.15s;
+}
+
+.vk-drag-bar:hover .vk-drag-handle {
+  background: #9ca3af;
+}
+
+.vk-drag-bar.vk-dragging .vk-drag-handle {
+  background: #6b7280;
+}
+
+.vk-drag-label {
+  font-family: 'Public Sans', sans-serif;
+  font-size: 10px;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Keyboard rows */
+.vk-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.vk-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Base key */
+.vk-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 46px;
+  padding: 0 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #1e293b;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background 0.1s, transform 0.08s, box-shadow 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+
+.vk-key:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.vk-key:active {
+  background: #e5e7eb;
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
+/* Key pop on press */
+.vk-key.vk-key-pop {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  transform: scale(1.06);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+/* Special keys */
+.vk-key-special {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #374151;
+}
+
+.vk-key-special:hover {
+  background: #d1d5db;
+}
+
+.vk-key-special:active {
+  background: #d1d5db;
+}
+
+/* Shift active state */
+.vk-key-shift.vk-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.vk-key-shift.vk-active:hover {
+  background: #1d4ed8;
+}
+
+/* Space bar */
+.vk-key-space {
+  flex: 1;
+  max-width: 340px;
+  min-width: 180px;
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: #ffffff;
+}
+
+/* Backspace, Enter */
+.vk-key-backspace,
+.vk-key-enter {
+  min-width: 72px;
+}
+
+.vk-key-enter {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.vk-key-enter:hover {
+  background: #1d4ed8;
+}
+
+.vk-key-enter:active {
+  background: #1e40af;
+}
+
+/* Number row keys slightly smaller */
+.vk-row-numbers .vk-key {
+  min-width: 42px;
+  height: 42px;
+  font-size: 15px;
+}
+
+/* SVG icon keys */
+.vk-key svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Responsive: larger screens */
+@media (min-width: 1200px) {
+  .vk-container {
+    padding: 12px 20px 20px;
+    max-width: 860px;
+  }
+
+  .vk-row {
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .vk-key {
+    min-width: 52px;
+    height: 50px;
+    font-size: 17px;
+    border-radius: 12px;
+  }
+
+  .vk-row-numbers .vk-key {
+    min-width: 46px;
+    height: 46px;
+  }
+
+  .vk-key-space {
+    max-width: 400px;
+  }
+
+  .vk-key-backspace,
+  .vk-key-enter {
+    min-width: 84px;
+  }
+}

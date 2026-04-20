@@ -1,0 +1,28 @@
+appId: com.kiosk-ai.app
+productName: Kiosk-Ai
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - "out/**/*"
+  - "!node_modules/**/*"
+
+extraResources:
+  - from: "../shared/dist"
+    to: "shared"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: "${productName}-${version}-Setup.${ext}"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

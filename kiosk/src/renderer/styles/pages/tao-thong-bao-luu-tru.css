@@ -1,0 +1,757 @@
+/* ===== Tạo mới thông báo lưu trú ===== */
+/* Right panel full stretch — footer pinned ở đáy, form scroll ở giữa (giống tao-khai-bao-tam-vang). */
+#right-panel:has(.ttbl-area) {
+  align-items: stretch;
+  overflow: hidden;
+  padding: 0;
+}
+
+.ttbl-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f5f7fb;
+}
+
+.ttbl-heading {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  letter-spacing: 1px;
+  padding: 24px 0 16px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.ttbl-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Card */
+.ttbl-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.ttbl-section-head {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 12px 12px 0 0;
+}
+
+.ttbl-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ttbl-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* Field */
+.ttbl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ttbl-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ttbl-req {
+  color: #dc2626;
+}
+
+/* Input */
+.ttbl-input {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ttbl-input:focus {
+  border-color: #2563eb;
+}
+
+.ttbl-input::placeholder {
+  color: #9ca3af;
+}
+
+.ttbl-input--locked,
+.ttbl-input[readonly] {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Hoà tkbtv-select vào layout ttbl */
+.ttbl-card-body .tkbtv-select-wrapper--open {
+  position: relative;
+  z-index: 200;
+}
+
+.ttbl-card-body .tkbtv-select {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border-width: 1px;
+  border-color: #e5e7eb;
+}
+
+.ttbl-card-body .tkbtv-select-wrapper--open .tkbtv-select {
+  border-color: #2563eb;
+}
+
+.ttbl-card-body .tkbtv-dropdown {
+  border-radius: 8px;
+  max-height: 320px;
+}
+
+.ttbl-card-body .tkbtv-dropdown-item {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* Multi-select inline: tags + chevron cùng 1 ô */
+.ttbl-card-body .ttbl-multi-inline .tkbtv-select {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px 12px;
+  min-height: 36px;
+}
+
+.ttbl-card-body .ttbl-multi-inline .tkbtv-multi-tags {
+  display: inline-flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.ttbl-card-body .ttbl-multi-inline .tkbtv-multi-tags:empty {
+  display: none;
+}
+
+.ttbl-card-body .ttbl-multi-inline .ttbl-multi-placeholder {
+  flex: 1;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.ttbl-card-body .ttbl-multi-inline .tkbtv-tag {
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: #f3f4f6;
+  border: none;
+  color: #374151;
+  border-radius: 4px;
+}
+
+.ttbl-card-body .ttbl-multi-inline .tkbtv-tag:hover {
+  background: #e5e7eb;
+}
+
+.ttbl-card-body .ttbl-multi-inline .tkbtv-tag::before {
+  color: #6b7280;
+}
+
+/* Select */
+.ttbl-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.ttbl-select:hover {
+  border-color: #d1d5db;
+}
+
+.ttbl-select-value {
+  font-size: 13px;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ttbl-select-value--placeholder {
+  color: #9ca3af;
+}
+
+/* Radio group */
+.ttbl-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 36px;
+  padding: 0 4px;
+}
+
+.ttbl-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.ttbl-radio input {
+  display: none;
+}
+
+.ttbl-radio-mark {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.ttbl-radio input:checked ~ .ttbl-radio-mark {
+  border-color: #2563eb;
+}
+
+.ttbl-radio input:checked ~ .ttbl-radio-mark::after {
+  content: '';
+  position: absolute;
+  inset: 2.5px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+/* Actions row (IV) */
+.ttbl-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ttbl-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ttbl-btn-ghost:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.ttbl-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background 0.15s;
+}
+
+.ttbl-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+/* Empty state */
+.ttbl-empty {
+  border: 1.5px dashed #e5e7eb;
+  border-radius: 10px;
+  padding: 28px 16px;
+  text-align: center;
+  background: #fafbfd;
+}
+
+.ttbl-empty-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ttbl-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.ttbl-empty-sub {
+  font-size: 11.5px;
+  color: #9ca3af;
+}
+
+/* Tag select (V) */
+.ttbl-tag-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ttbl-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ttbl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #eef2ff;
+  color: #1e40af;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.ttbl-helper {
+  font-size: 11.5px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Commit checkbox */
+.ttbl-commit {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-top: 4px;
+}
+
+.ttbl-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.ttbl-check input {
+  display: none;
+}
+
+.ttbl-check-mark {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 3px;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.15s;
+}
+
+.ttbl-check input:checked ~ .ttbl-check-mark {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.ttbl-check input:checked ~ .ttbl-check-mark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(45deg);
+}
+
+/* Footer — pinned ở đáy panel, border-top + nền trắng (cùng pattern .tkbtv-footer). */
+.ttbl-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.ttbl-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ttbl-ft-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+/* Back button unified across app (pill 44px) — override .ttbl-ft-btn base sizing. */
+.ttbl-ft-btn--back {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.ttbl-ft-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.ttbl-ft-btn--draft {
+  background: #fff;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+}
+
+.ttbl-ft-btn--draft:hover {
+  background: #eff6ff;
+}
+
+.ttbl-ft-btn--submit {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #fff;
+}
+
+.ttbl-ft-btn--submit:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.ttbl-ft-btn--submit:disabled {
+  background: #d1d5db;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* ==================== Modal: Thêm mới người lưu trú ==================== */
+.tnlt-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.25s ease;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.tnlt-overlay--visible {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.tnlt-modal {
+  position: relative;
+  width: 100%;
+  max-width: 820px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #f5f7fb;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  transform: scale(0.96) translateY(10px);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s;
+}
+
+.tnlt-overlay--visible .tnlt-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.tnlt-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.tnlt-close:hover {
+  background: #fee2e2;
+}
+
+.tnlt-title {
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+  color: #111827;
+}
+
+.tnlt-card {
+  background: #fff;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tnlt-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  color: #fff;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 10px 10px 0 0;
+  letter-spacing: 0.3px;
+}
+
+.tnlt-count-badge {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tnlt-person-remove {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.tnlt-person-remove:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.tnlt-card-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tnlt-person-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tnlt-person-tab {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.tnlt-person-tab--active {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.tnlt-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tnlt-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.tnlt-date {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tnlt-date input {
+  flex: 1;
+  padding-right: 32px;
+}
+
+.tnlt-date svg {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+}
+
+.tnlt-textarea {
+  height: 70px;
+  padding: 8px 12px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Native select styled */
+.ttbl-native-select {
+  height: 36px;
+  padding: 0 28px 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #111827;
+  background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16' fill='none'><path d='M4 6l4 4 4-4' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 10px center;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ttbl-native-select:focus {
+  border-color: #2563eb;
+}
+
+/* Add-more dashed button */
+.tnlt-add-more {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 10px;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 16px;
+}
+
+.tnlt-add-more:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+/* Footer */
+.tnlt-footer {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tnlt-btn {
+  padding: 9px 28px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tnlt-btn--close {
+  background: #fff;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+}
+
+.tnlt-btn--close:hover {
+  background: #eff6ff;
+}
+
+.tnlt-btn--save {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #fff;
+}
+
+.tnlt-btn--save:hover {
+  background: #1d4ed8;
+}

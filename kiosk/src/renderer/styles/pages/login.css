@@ -1,0 +1,704 @@
+/* ===== Login Page ===== */
+.login-page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f7;
+}
+
+/* --- Header --- */
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.header-divider {
+  width: 1px;
+  height: 16px;
+  background: #d1d5db;
+}
+
+.header-page-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lang-btn:hover { background: #e5e7eb; }
+
+.settings-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.header-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: linear-gradient(90deg, #0052D0 0%, #799DFF 100%);
+  color: #ffffff;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.header-docs-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: #ffffff;
+  border: 1.5px solid #2563eb;
+  color: #2563eb;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-docs-btn:hover {
+  background: #eff6ff;
+}
+
+.header-docs-btn svg {
+  flex-shrink: 0;
+}
+
+.settings-btn:hover { background: #f3f4f6; }
+
+/* --- Body --- */
+.login-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* =========================================
+   LEFT PANEL — AI Assistant (Blue)
+   ========================================= */
+.login-left {
+  flex: 0 0 35%;
+  background: linear-gradient(170deg, #799DFF 0%, #4a7af5 30%, #2563eb 60%, #0052D0 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition:
+    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+    right 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 18px;
+  min-height: 0;
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Avatar */
+.ai-avatar-wrapper {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-avatar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 95%;
+}
+
+.ai-avatar-img {
+  height: 120%;
+  width: auto;
+  display: block;
+}
+
+/* Chat area */
+.ai-chat-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 36px;
+  overflow-y: auto;
+  flex: 0 0 auto;
+  max-height: 27vh;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ai-chat-area::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-msg-user { align-items: flex-end; }
+.chat-msg-ai { align-items: flex-start; }
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 11px 15px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.chat-user {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border-radius: 14px 14px 4px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.chat-ai {
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 14px 14px 14px 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 8px;
+}
+
+.chat-ai-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  overflow: hidden;
+}
+
+.chat-ai-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-ai strong { color: #1d4ed8; }
+
+.chat-time {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.chat-time-right { text-align: right; }
+.chat-time-left { text-align: left; }
+
+/* Input area */
+.ai-input-area {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 0 36px;
+}
+
+.ai-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 12.5px;
+  outline: none;
+  font-family: inherit;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ai-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+.ai-input:focus {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ai-mic-btn,
+.ai-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-mic-btn:hover,
+.ai-send-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+
+/* =========================================
+   FLOATING MODE — AI mini widget bottom-right
+   ========================================= */
+.login-left[data-size="floating"] {
+  position: absolute;
+  left: 60px;
+  top: 0;
+  bottom: 60px;
+  overflow: hidden;
+  right: auto;
+  width: 300px;
+  z-index: 1050;
+  background: transparent;
+  flex: none !important;
+  pointer-events: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.login-left[data-size="floating"] .ai-section {
+  pointer-events: auto;
+  padding: 0;
+  flex-direction: column;
+  height: 100%;
+  max-height: 91%;
+  gap: 0;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+/* Avatar in floating */
+.login-left[data-size="floating"] .ai-avatar-wrapper {
+  flex: none;
+  height: 400px;
+  position: relative;
+  margin-bottom: -60px;
+  animation: floatAvatarIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.login-left[data-size="floating"] .ai-avatar {
+  height: 100%;
+  bottom: 0;
+  transition: height 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chat header — hidden in normal, shown in floating */
+.ai-chat-header {
+  display: none;
+}
+
+.login-left[data-size="floating"] .ai-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  animation: floatChatSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.ai-chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-chat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.ai-chat-header-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: 0.5px;
+}
+
+.ai-chat-expand-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+}
+
+.ai-chat-expand-btn:hover {
+  background: #f3f4f6;
+}
+
+/* Chat area in floating */
+.login-left[data-size="floating"] .ai-chat-area {
+  animation: floatChatSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+  padding: 12px 14px;
+  gap: 10px;
+  margin-bottom: 0;
+  min-height: 400px;
+  max-height: 400px;
+  background: #ffffff;
+  overflow-y: auto;
+}
+
+.login-left[data-size="floating"] .chat-bubble {
+  max-width: 85%;
+}
+
+/* AI bubble — white bg, shadow */
+.login-left[data-size="floating"] .chat-bubble.chat-ai {
+  background: #f0f4ff;
+  color: #1e293b;
+  border-radius: 14px 14px 14px 4px;
+  box-shadow: none;
+  padding: 10px 14px;
+  font-size: 12.5px;
+}
+
+/* User bubble — light gray, right aligned */
+.login-left[data-size="floating"] .chat-bubble.chat-user {
+  background: #f3f4f6;
+  color: #1e293b;
+  border-radius: 14px 14px 4px 14px;
+  backdrop-filter: none;
+  border: none;
+  padding: 10px 14px;
+  font-size: 12.5px;
+}
+
+.login-left[data-size="floating"] .chat-msg-user {
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-left[data-size="floating"] .chat-time {
+  display: none;
+}
+
+/* Input area in floating */
+.login-left[data-size="floating"] .ai-input-area {
+  padding: 10px 14px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  border-radius: 0 0 16px 16px;
+  gap: 6px;
+  animation: floatChatSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+
+.login-left[data-size="floating"] .ai-input {
+  padding: 9px 14px;
+  font-size: 12.5px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #1e293b;
+  border-radius: 50px;
+  backdrop-filter: none;
+}
+
+.login-left[data-size="floating"] .ai-input::placeholder {
+  color: #9ca3af;
+}
+
+.login-left[data-size="floating"] .ai-mic-btn {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  backdrop-filter: none;
+}
+
+.login-left[data-size="floating"] .ai-send-btn {
+  width: 34px;
+  height: 34px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  backdrop-filter: none;
+}
+
+.login-left[data-size="floating"] .ai-send-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Floating mode animations */
+@keyframes floatAvatarIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.2) translateY(20px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes floatChatSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* =========================================
+   RIGHT PANEL — Login Options (Light)
+   ========================================= */
+.login-right {
+  flex: 0 0 65%;
+  background: #f0f2f5;
+}
+
+.login-form-area {
+  max-width: 520px;
+  width: 100%;
+}
+
+.login-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.login-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin-bottom: 36px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Login Options Container */
+.login-options-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03), 0 8px 30px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/* CCCD Option */
+.login-cccd-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 20px;
+  background: #f6f8fb;
+  border: 1.5px solid #e8ecf1;
+  border-radius: 16px;
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.login-cccd-option:hover {
+  border-color: #93b4f5;
+  background: #eef4ff;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.08);
+}
+
+.login-cccd-option:active { transform: scale(0.995); }
+
+.cccd-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #edf2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cccd-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.cccd-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cccd-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.cccd-desc {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.cccd-arrow {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+/* Divider with HOẶC */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.login-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.login-divider-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+}
+
+/* VNeID Button */
+.login-vneid-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-radius: 50px;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
+}
+
+.login-vneid-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.login-vneid-btn:active { transform: translateY(0); }
+
+.vneid-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.vneid-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.vneid-hint {
+  font-size: 14px;
+  color: #94a3b8;
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 8px;
+}
+

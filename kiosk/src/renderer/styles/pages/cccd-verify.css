@@ -1,0 +1,318 @@
+/* ===== Layout Override ===== */
+.cccd-right-wide {
+  flex: 0 0 70% !important;
+  padding: 12px 20px !important;
+  overflow: hidden !important;
+}
+
+/* ===== Page Container ===== */
+.cccd-verify-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ===== Header Section ===== */
+.cccd-header-section {
+  text-align: center;
+  padding: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+.cccd-verify-icon { margin-bottom: 4px; }
+.cccd-verify-icon svg { width: 28px; height: 28px; }
+
+.cccd-verify-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.cccd-verify-subtitle {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* ===== Main Card ===== */
+.cccd-main-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 4px 20px rgba(0,0,0,0.06);
+  padding: 16px 32px 20px;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 6px;
+}
+
+.face-section-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e3a8a;
+  text-align: center;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+/* Card body: 2 columns - equal split */
+.cccd-card-body {
+  display: flex;
+  gap: 32px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+/* ===== Left: CCCD Info ===== */
+.cccd-info-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cccd-info-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.cccd-photo {
+  width: 160px;
+  height: 200px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.cccd-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cccd-info-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px 16px;
+  align-items: baseline;
+  width: 100%;
+}
+
+.cccd-info-row {
+  display: contents;
+}
+
+.cccd-info-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+  line-height: 20px;
+}
+
+.cccd-info-label svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.cccd-info-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 20px;
+}
+
+/* ===== Right: eKYC Camera ===== */
+.cccd-ekyc-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* eKYC Frame - 3 layers stacked */
+.ekyc-frame {
+  width: 260px;
+  height: 260px;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+/* Layer 1: Video / Placeholder */
+.ekyc-video-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #edf1f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Layer 2: Overlay mask with transparent circle */
+.ekyc-overlay-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: radial-gradient(circle 80px at center, transparent 100%, rgba(255,255,255,0.75) 100%);
+}
+
+/* Layer 3: Corner brackets */
+.ekyc-guide-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.ekyc-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: #94a3b8;
+  border-style: solid;
+  border-width: 0;
+}
+
+.ekyc-corner-tl {
+  top: 16px; left: 16px;
+  border-top-width: 2.5px;
+  border-left-width: 2.5px;
+  border-top-left-radius: 8px;
+}
+
+.ekyc-corner-tr {
+  top: 16px; right: 16px;
+  border-top-width: 2.5px;
+  border-right-width: 2.5px;
+  border-top-right-radius: 8px;
+}
+
+.ekyc-corner-bl {
+  bottom: 16px; left: 16px;
+  border-bottom-width: 2.5px;
+  border-left-width: 2.5px;
+  border-bottom-left-radius: 8px;
+}
+
+.ekyc-corner-br {
+  bottom: 16px; right: 16px;
+  border-bottom-width: 2.5px;
+  border-right-width: 2.5px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Dashed circle guide */
+.ekyc-dashed-circle {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  animation: ekyc-rotate 25s linear infinite;
+}
+
+@keyframes ekyc-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Hint text */
+.ekyc-hint {
+  font-size: 14px;
+  color: #2563eb;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 260px;
+  margin-top: 4px;
+}
+
+/* ===== Footer Bar ===== */
+.cccd-footer-bar {
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.cccd-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 24px;
+  background: linear-gradient(180deg, #edf1f8 0%, #e6ebf4 100%);
+  border-radius: 12px;
+}
+
+.cccd-btn-back {
+  padding: 11px 28px;
+  background: #ffffff;
+  color: #1e3a8a;
+  border: 1.5px solid #2563eb;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cccd-btn-back:hover {
+  background: #eff6ff;
+}
+
+.cccd-btn-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  background: #1447d4;
+  color: #ffffff;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cccd-btn-confirm:hover {
+  background: #0f3aaf;
+  box-shadow: 0 4px 14px rgba(20, 71, 212, 0.3);
+  transform: translateY(-1px);
+}
+
+.cccd-btn-confirm:active { transform: translateY(0); }
+
+/* Hotline */
+.cccd-hotline {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 6px 0 2px;
+  flex-shrink: 0;
+}
+
+.cccd-hotline strong {
+  color: #374151;
+}

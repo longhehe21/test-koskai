@@ -1,0 +1,202 @@
+/* ===== Scan tài liệu ===== */
+.scan-tl-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-left: 0;
+}
+
+/* Body: 2 columns */
+.scan-tl-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* Left: Camera preview — takes most space */
+.scan-tl-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  min-width: 0;
+}
+
+.scan-tl-camera {
+  width: 100%;
+  height: 100%;
+  background: #e8ecf2;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Document image — fills camera like real scan */
+.scan-tl-doc-img {
+  width: 88%;
+  height: auto;
+  max-height: 92%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+}
+
+/* Scan line */
+.scan-tl-line {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.6), transparent);
+  z-index: 3;
+  animation: scanLine 3s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+  0%, 100% { top: 20px; opacity: 0.4; }
+  50% { top: calc(100% - 20px); opacity: 0.8; }
+}
+
+/* Right: Sidebar */
+.scan-tl-right {
+  width: 200px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+/* List header */
+.scan-tl-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+  flex-shrink: 0;
+}
+
+.scan-tl-list-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.scan-tl-list-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 50px;
+}
+
+/* Scrollable list */
+.scan-tl-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Thumbnail */
+.scan-tl-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scan-tl-thumb-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.scan-tl-thumb-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-tl-thumb-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.scan-tl-thumb-page {
+  font-size: 9px;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.scan-tl-thumb-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+/* Sidebar footer — buttons stacked */
+.scan-tl-sidebar-footer {
+  padding: 14px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.scan-tl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.scan-tl-btn--back {
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  color: #374151;
+}
+
+.scan-tl-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.scan-tl-btn--next {
+  background: #2563eb;
+  border: 1.5px solid #2563eb;
+  color: #ffffff;
+}
+
+.scan-tl-btn--next:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}

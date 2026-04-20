@@ -1,0 +1,636 @@
+/* ===== Tạo mới khai báo tạm vắng ===== */
+
+/* Right panel needs full stretch for this page */
+#right-panel:has(.tkbtv-area) {
+  align-items: stretch;
+  overflow: hidden;
+  padding: 0;
+}
+
+.tkbtv-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tkbtv-page-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  padding: 24px 0 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+
+/* Scrollable form */
+.tkbtv-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 48px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Section */
+.tkbtv-section {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  overflow: visible;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.tkbtv-section-header {
+  border-radius: 16px 16px 0 0;
+}
+
+.tkbtv-section-header {
+  background: linear-gradient(90deg, #0052D0 0%, #7990FF 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 24px;
+  letter-spacing: 0.3px;
+}
+
+
+.tkbtv-section-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Field */
+.tkbtv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tkbtv-field--half {
+  flex: 1;
+  min-width: 0;
+}
+
+.tkbtv-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.tkbtv-label--sub {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.tkbtv-req {
+  color: #ef4444;
+}
+
+/* Rows */
+.tkbtv-row {
+  display: flex;
+  gap: 16px;
+}
+
+.tkbtv-row--three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+/* Input */
+.tkbtv-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.tkbtv-input:focus {
+  border-color: #2563eb;
+}
+
+.tkbtv-input--placeholder {
+  color: #9ca3af;
+}
+
+.tkbtv-input-icon {
+  position: relative;
+}
+
+.tkbtv-input-icon .tkbtv-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.tkbtv-input-icon svg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Textarea */
+.tkbtv-textarea {
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.2s;
+}
+
+.tkbtv-textarea:focus {
+  border-color: #2563eb;
+}
+
+/* Select */
+.tkbtv-select-wrapper {
+  position: relative;
+}
+
+.tkbtv-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.tkbtv-select:hover {
+  border-color: #9ca3af;
+}
+
+.tkbtv-select-wrapper--open .tkbtv-select {
+  border-color: #2563eb;
+}
+
+.tkbtv-select-wrapper--open .tkbtv-select svg {
+  transform: rotate(180deg);
+}
+
+.tkbtv-select svg {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+/* Dropdown */
+.tkbtv-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s ease;
+}
+
+.tkbtv-select-wrapper--open .tkbtv-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.tkbtv-dropdown-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tkbtv-dropdown-item:first-child {
+  border-radius: 10px 10px 0 0;
+}
+
+.tkbtv-dropdown-item:last-child {
+  border-radius: 0 0 10px 10px;
+}
+
+.tkbtv-dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.tkbtv-dropdown-item--active {
+  color: #2563eb;
+  font-weight: 600;
+  background: #eff6ff;
+}
+
+.tkbtv-dropdown-item--active:hover {
+  background: #dbeafe;
+}
+
+/* Locked select (readonly from CCCD) */
+.tkbtv-select-wrapper--locked .tkbtv-select {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+  cursor: default;
+  pointer-events: none;
+}
+
+.tkbtv-select-wrapper--locked .tkbtv-select svg {
+  display: none;
+}
+
+/* Radio */
+.tkbtv-radio-group {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.tkbtv-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.tkbtv-radio-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+
+.tkbtv-radio--active {
+  color: #111827;
+  font-weight: 600;
+}
+
+.tkbtv-radio--active .tkbtv-radio-dot {
+  border-color: #2563eb;
+}
+
+.tkbtv-radio--active .tkbtv-radio-dot::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+/* Multi-select wrapper */
+.tkbtv-multi-select {
+  position: relative;
+}
+
+.tkbtv-multi-select .tkbtv-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.tkbtv-multi-select .tkbtv-select:hover {
+  border-color: #9ca3af;
+}
+
+.tkbtv-multi-select.tkbtv-select-wrapper--open .tkbtv-select {
+  border-color: #2563eb;
+}
+
+.tkbtv-multi-select.tkbtv-select-wrapper--open .tkbtv-select svg {
+  transform: rotate(180deg);
+}
+
+.tkbtv-multi-select .tkbtv-select svg {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.tkbtv-multi-select .tkbtv-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s ease;
+}
+
+.tkbtv-multi-select.tkbtv-select-wrapper--open .tkbtv-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Tags (selected items) */
+.tkbtv-multi-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  min-height: 0;
+}
+
+.tkbtv-multi-tags:empty {
+  display: none;
+}
+
+.tkbtv-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #eff6ff;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tkbtv-tag:hover {
+  background: #dbeafe;
+}
+
+.tkbtv-tag::before {
+  content: '✕';
+  font-size: 9px;
+  font-weight: 700;
+}
+
+/* Section III toggle blocks */
+#s3-trong-nuoc,
+#s3-nuoc-ngoai {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tkbtv-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* Footer */
+.tkbtv-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 48px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.tkbtv-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tkbtv-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Back button unified across app (pill 44px) — override .tkbtv-footer-btn base shape. */
+.tkbtv-footer-btn--back {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+}
+
+.tkbtv-footer-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.tkbtv-footer-btn--draft {
+  background: #ffffff;
+  border: 1.5px solid #2563eb;
+  color: #2563eb;
+}
+
+.tkbtv-footer-btn--draft:hover {
+  background: #eff6ff;
+}
+
+.tkbtv-footer-btn--submit {
+  background: #2563eb;
+  border: 1.5px solid #2563eb;
+  color: #ffffff;
+}
+
+.tkbtv-footer-btn--submit:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* ===== Date Picker ===== */
+.tkbtv-datepicker {
+  position: relative;
+}
+
+.tkbtv-datepicker .tkbtv-input-icon {
+  cursor: pointer;
+}
+
+.tkbtv-datepicker .tkbtv-input {
+  cursor: pointer;
+}
+
+/* Calendar popup */
+.tkbtv-calendar {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  width: 300px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: all 0.2s ease;
+}
+
+.tkbtv-datepicker--open .tkbtv-calendar {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Calendar header */
+.tkbtv-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tkbtv-cal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tkbtv-cal-nav {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.tkbtv-cal-nav:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Weekday headers */
+.tkbtv-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.tkbtv-cal-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Day grid */
+.tkbtv-cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.tkbtv-cal-day {
+  text-align: center;
+  font-size: 13px;
+  color: #374151;
+  padding: 7px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+
+.tkbtv-cal-day:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.tkbtv-cal-day--empty {
+  cursor: default;
+}
+
+.tkbtv-cal-day--empty:hover {
+  background: none;
+}
+
+.tkbtv-cal-day--today {
+  border: 1.5px solid #2563eb;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.tkbtv-cal-day--selected {
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.tkbtv-cal-day--selected:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.tkbtv-cal-day--selected.tkbtv-cal-day--today {
+  border-color: #2563eb;
+}
