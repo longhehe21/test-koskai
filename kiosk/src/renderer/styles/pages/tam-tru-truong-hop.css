@@ -1,0 +1,206 @@
+/* ===== Tạm trú - Trường hợp ===== */
+.tttrh-area {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.tttrh-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  margin: 0 0 10px;
+  letter-spacing: -0.2px;
+}
+
+.tttrh-title-accent {
+  color: #2563eb;
+}
+
+.tttrh-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+  margin: 0 0 28px;
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+.tttrh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 720px;
+}
+
+/* 3-column variant — dùng cho XoaDangKyTruongHopPage (6 card). */
+.tttrh-grid--three {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1100px;
+  gap: 18px;
+}
+
+.tttrh-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 26px 24px;
+  background: #ffffff;
+  border: 1px solid #eef1f5;
+  border-radius: 20px;
+  cursor: pointer;
+  min-height: 200px;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.tttrh-card:hover {
+  border-color: #dbe3ec;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05), 0 8px 22px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.tttrh-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eff4fb;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.tttrh-card-icon svg {
+  stroke: #2563eb;
+  transition: stroke 0.2s ease;
+}
+
+.tttrh-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.4;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+
+.tttrh-card-desc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+
+/* Active state - solid blue */
+.tttrh-card--active {
+  border-color: #2563eb;
+  background: #2563eb;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28), 0 4px 8px rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+.tttrh-card--active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.32), 0 4px 8px rgba(37, 99, 235, 0.2);
+}
+
+.tttrh-card--active .tttrh-card-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.tttrh-card--active .tttrh-card-icon svg {
+  stroke: #ffffff;
+}
+
+.tttrh-card--active .tttrh-card-title {
+  color: #ffffff;
+}
+
+.tttrh-card--active .tttrh-card-desc {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.tttrh-card-decor {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  opacity: 0.25;
+  pointer-events: none;
+  color: #ffffff;
+}
+
+.tttrh-card:not(.tttrh-card--active) .tttrh-card-decor {
+  display: none;
+}
+
+/* Footer buttons */
+.tttrh-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.tttrh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tttrh-btn--back {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.tttrh-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.tttrh-btn--next {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.tttrh-btn--next:hover:not(.tttrh-btn--disabled) {
+  background: #1d4ed8;
+}
+
+.tttrh-btn--disabled {
+  background: #93b6f0;
+  cursor: not-allowed;
+  opacity: 0.75;
+}

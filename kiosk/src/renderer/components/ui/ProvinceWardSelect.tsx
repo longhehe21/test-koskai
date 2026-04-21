@@ -15,6 +15,11 @@ interface ProvinceWardSelectProps {
   wardPlaceholder?: string;
   /** Gọi khi ward thay đổi — dùng để auto-fill "Công an {ward}" ở input khác. */
   onCoquan?: (coquan: string) => void;
+  /** Nếu set → wrap mỗi dropdown trong tkbtv-field--half với label trên. */
+  provinceLabel?: string;
+  wardLabel?: string;
+  provinceRequired?: boolean;
+  wardRequired?: boolean;
 }
 
 interface ApiProvince {
@@ -41,6 +46,10 @@ export function ProvinceWardSelect({
   provincePlaceholder = 'Chọn Tỉnh/Thành',
   wardPlaceholder = 'Chọn Xã/Phường',
   onCoquan,
+  provinceLabel,
+  wardLabel,
+  provinceRequired,
+  wardRequired,
 }: ProvinceWardSelectProps) {
   const [provinces, setProvinces] = useState<DropdownItem[]>([]);
   const [wards, setWards] = useState<DropdownItem[]>([]);
@@ -117,21 +126,54 @@ export function ProvinceWardSelect({
     onCoquan?.(`Công an ${item.name}`);
   };
 
+  const provinceDropdown = (
+    <Dropdown
+      value={province}
+      placeholder={provincePlaceholder}
+      items={provinces}
+      onChange={handleProvinceChange}
+    />
+  );
+  const wardDropdown = (
+    <Dropdown
+      value={ward}
+      placeholder={wardPlaceholder}
+      items={wards}
+      onChange={handleWardChange}
+      disabled={!province}
+    />
+  );
+
+  const hasLabels = provinceLabel !== undefined || wardLabel !== undefined;
+  if (!hasLabels) {
+    return (
+      <>
+        {provinceDropdown}
+        {wardDropdown}
+      </>
+    );
+  }
+
   return (
     <>
-      <Dropdown
-        value={province}
-        placeholder={provincePlaceholder}
-        items={provinces}
-        onChange={handleProvinceChange}
-      />
-      <Dropdown
-        value={ward}
-        placeholder={wardPlaceholder}
-        items={wards}
-        onChange={handleWardChange}
-        disabled={!province}
-      />
+      <div className="tkbtv-field tkbtv-field--half">
+        {provinceLabel && (
+          <label className="tkbtv-label">
+            {provinceLabel}
+            {provinceRequired && <span className="tkbtv-req"> *</span>}
+          </label>
+        )}
+        {provinceDropdown}
+      </div>
+      <div className="tkbtv-field tkbtv-field--half">
+        {wardLabel && (
+          <label className="tkbtv-label">
+            {wardLabel}
+            {wardRequired && <span className="tkbtv-req"> *</span>}
+          </label>
+        )}
+        {wardDropdown}
+      </div>
     </>
   );
 }

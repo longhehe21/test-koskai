@@ -8,4 +8,5 @@ export { DraftSavedToast } from './DraftSavedToast';
 export { ProvinceWardSelect } from './ProvinceWardSelect';
 export { LuuTruHoSoModal } from './LuuTruHoSoModal';
 export { HoSoDinhKemModal, type HoSoDinhKemSubmit } from './HoSoDinhKemModal';
+export { TamTruHoSoDinhKemModal, type TamTruHoSoDinhKemSubmit } from './TamTruHoSoDinhKemModal';
 export { BRANCHES as HO_SO_DINH_KEM_BRANCHES } from './hoSoDinhKemBranches';
