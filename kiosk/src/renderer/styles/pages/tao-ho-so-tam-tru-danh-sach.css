@@ -1,0 +1,159 @@
+/* ===== Tạo hồ sơ đăng ký tạm trú theo danh sách =====
+   Extend tao-ho-so-thuong-tru.css với class bổ sung cho form tạm trú.
+   Dùng chung prefix tkbtv-/thtt- để kế thừa layout/form style. */
+
+/* ProvinceWardSelect render 2 Dropdown bare trong tkbtv-row → mặc định co
+   theo content. Ép mỗi select stretch 50% của row. */
+.tkbtv-row > .tkbtv-select-wrapper {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Fix height Dropdown để khi chưa chọn (placeholder) height bằng khi đã chọn.
+   Mặc định padding 10px 14px + line-height text → height khác khi value rỗng
+   vs có value (nếu font-size khác). Ép min-height fix cứng. */
+.tkbtv-select {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* Đồng bộ height giữa input + Dropdown trong table (bảng thành viên,
+   danh sách công dân, xin ý kiến, v.v.) — tránh lệch khi cột có mix 2 loại. */
+.thtt-table .tkbtv-input,
+.thtt-table .tkbtv-input--xs {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* Section header có action button bên phải (VD: "+ Thêm người") */
+.tkbtv-section-header--with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tkbtv-section-action {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tkbtv-section-action:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Upload row (Tải file mẫu | Tải lên | Thêm mới) */
+.tkbtv-upload-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.tkbtv-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tkbtv-upload-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.tkbtv-upload-btn--primary {
+  margin-left: auto;
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.tkbtv-upload-btn--primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Subheading trong section (VD "Thông tin người đại diện theo pháp luật") */
+.thtt-subheading {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 16px 0 10px;
+}
+
+/* Group 3 checkbox ngang */
+.thtt-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: center;
+}
+
+/* Row header có label trái + action link phải */
+.thtt-table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.thtt-add-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+
+.thtt-add-link:hover {
+  text-decoration: underline;
+}
+
+/* Empty cell "—" */
+.thtt-empty-cell {
+  color: #94a3b8;
+  text-align: center;
+}
+
+.thtt-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.thtt-link:hover {
+  text-decoration: underline;
+}
+
+/* STT cell */
+.thtt-stt {
+  color: #0f172a;
+  font-weight: 500;
+  width: 48px;
+}

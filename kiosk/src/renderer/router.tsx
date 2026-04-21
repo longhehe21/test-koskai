@@ -17,7 +17,16 @@ const TaoHoSoThuongTruPage = lazy(() => import('@pages/TaoHoSoThuongTruPage'));
 const TaoThongBaoLuuTruPage = lazy(() => import('@pages/TaoThongBaoLuuTruPage'));
 const XemTruocHoSoPage = lazy(() => import('@pages/XemTruocHoSoPage'));
 const HoSoCuaToiPage = lazy(() => import('@pages/HoSoCuaToiPage'));
-const TamTruHoSoPage = lazy(() => import('@pages/TamTruHoSoPage'));
+const TamTruThuTucPage = lazy(() => import('@pages/TamTruThuTucPage'));
+const TamTruTruongHopPage = lazy(() => import('@pages/TamTruTruongHopPage'));
+const TamTruDoiTuongPage = lazy(() => import('@pages/TamTruDoiTuongPage'));
+const TaoHoSoTamTruDanhSachPage = lazy(() => import('@pages/TaoHoSoTamTruDanhSachPage'));
+const TaoHoSoTamTruNhanKhauHoPage = lazy(() => import('@pages/TaoHoSoTamTruNhanKhauHoPage'));
+const GiaHanTruongHopPage = lazy(() => import('@pages/GiaHanTruongHopPage'));
+const TaoHoSoGiaHanPage = lazy(() => import('@pages/TaoHoSoGiaHanPage'));
+const TaoHoSoGiaHanDanhSachPage = lazy(() => import('@pages/TaoHoSoGiaHanDanhSachPage'));
+const XoaDangKyTruongHopPage = lazy(() => import('@pages/XoaDangKyTruongHopPage'));
+const TaoHoSoXoaDangKyPage = lazy(() => import('@pages/TaoHoSoXoaDangKyPage'));
 const NopHoSoThanhCongPage = lazy(() => import('@pages/NopHoSoThanhCongPage'));
 const HoKhauTruongHopPage = lazy(() => import('@pages/HoKhauTruongHopPage'));
 const HoKhauSinhSongPage = lazy(() => import('@pages/HoKhauSinhSongPage'));
@@ -53,6 +62,10 @@ export function AppRoutes() {
         <Route path="scan-tam-vang" element={withSuspense(<ScanTaiLieuPage />)} />
         <Route path="scan-luu-tru" element={withSuspense(<ScanTaiLieuPage />)} />
         <Route path="scan-tam-tru" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="scan-tam-tru-ct01" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="scan-tam-tru-quan-doi" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="scan-tam-tru-phuong-tien" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="scan-tam-tru-thue-muon" element={withSuspense(<ScanTaiLieuPage />)} />
         <Route path="scan-ho-khau" element={withSuspense(<ScanTaiLieuPage />)} />
         <Route path="tao-khai-bao-tam-vang" element={withSuspense(<TaoKhaiBaoTamVangPage />)} />
         <Route path="tao-ho-so-thuong-tru" element={withSuspense(<TaoHoSoThuongTruPage />)} />
@@ -61,9 +74,28 @@ export function AppRoutes() {
         <Route path="xem-truoc-tam-vang" element={withSuspense(<XemTruocHoSoPage />)} />
         <Route path="xem-truoc-luu-tru" element={withSuspense(<XemTruocHoSoPage />)} />
         <Route path="xem-truoc-tam-tru" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="xem-truoc-tam-tru-ct01" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="xem-truoc-tam-tru-quan-doi" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="xem-truoc-tam-tru-phuong-tien" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="xem-truoc-tam-tru-thue-muon" element={withSuspense(<XemTruocHoSoPage />)} />
         <Route path="xem-truoc-ho-khau" element={withSuspense(<XemTruocHoSoPage />)} />
         <Route path="ho-so-cua-toi" element={withSuspense(<HoSoCuaToiPage />)} />
-        <Route path="tam-tru-ho-so" element={withSuspense(<TamTruHoSoPage />)} />
+        <Route path="tam-tru-thu-tuc" element={withSuspense(<TamTruThuTucPage />)} />
+        <Route path="tam-tru-truong-hop" element={withSuspense(<TamTruTruongHopPage />)} />
+        <Route path="tam-tru-doi-tuong" element={withSuspense(<TamTruDoiTuongPage />)} />
+        <Route path="tao-ho-so-tam-tru-danh-sach" element={withSuspense(<TaoHoSoTamTruDanhSachPage />)} />
+        <Route path="tao-ho-so-tam-tru-nhan-khau-ho" element={withSuspense(<TaoHoSoTamTruNhanKhauHoPage />)} />
+        <Route path="gia-han-truong-hop" element={withSuspense(<GiaHanTruongHopPage />)} />
+        <Route path="scan-gia-han" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="scan-gia-han-danh-sach" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="xem-truoc-gia-han" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="xem-truoc-gia-han-danh-sach" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="tao-ho-so-gia-han" element={withSuspense(<TaoHoSoGiaHanPage />)} />
+        <Route path="tao-ho-so-gia-han-danh-sach" element={withSuspense(<TaoHoSoGiaHanDanhSachPage />)} />
+        <Route path="xoa-dang-ky-truong-hop" element={withSuspense(<XoaDangKyTruongHopPage />)} />
+        <Route path="scan-xoa-dang-ky" element={withSuspense(<ScanTaiLieuPage />)} />
+        <Route path="xem-truoc-xoa-dang-ky" element={withSuspense(<XemTruocHoSoPage />)} />
+        <Route path="tao-ho-so-xoa-dang-ky" element={withSuspense(<TaoHoSoXoaDangKyPage />)} />
         <Route path="nop-ho-so-thanh-cong" element={withSuspense(<NopHoSoThanhCongPage />)} />
         <Route path="ho-khau-truong-hop" element={withSuspense(<HoKhauTruongHopPage />)} />
         <Route path="ho-khau-sinh-song" element={withSuspense(<HoKhauSinhSongPage />)} />

@@ -98,25 +98,27 @@ export const COQUAN_ITEMS: DropdownItem[] = [
   { code: 'cong-an-phuong-ba-dinh', name: 'Công an Phường Ba Đình' },
 ];
 
-export function RowActions({ onAdd, onRemove }: { onAdd: () => void; onRemove?: () => void }) {
+export function RowActions({ onAdd, onRemove }: { onAdd?: () => void; onRemove?: () => void }) {
   return (
     <div className="thtt-row-actions">
-      <button type="button" className="thtt-add-btn" onClick={onAdd} aria-label="Thêm">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#2563eb"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="16" />
-          <line x1="8" y1="12" x2="16" y2="12" />
-        </svg>
-      </button>
+      {onAdd && (
+        <button type="button" className="thtt-add-btn" onClick={onAdd} aria-label="Thêm">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+      )}
       {onRemove && (
         <button type="button" className="thtt-del-btn" onClick={onRemove} aria-label="Xoá">
           <svg

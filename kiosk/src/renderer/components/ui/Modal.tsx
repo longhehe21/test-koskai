@@ -12,6 +12,10 @@ interface ModalProps {
   closeDurationMs?: number;
   /** Có đóng khi click ngoài không. Default true. */
   closeOnBackdrop?: boolean;
+  /** CSS selector của portal target. Default document.body.
+   * Set '.kiosk-content-panel' để scope modal vào panel 70% bên phải,
+   * không phủ AI sidebar bên trái. */
+  portalSelector?: string;
   children: ReactNode;
 }
 
@@ -27,6 +31,7 @@ export function Modal({
   visibleClassName,
   closeDurationMs = 250,
   closeOnBackdrop = true,
+  portalSelector,
   children,
 }: ModalProps) {
   const [mounted, setMounted] = useState(open);
@@ -47,6 +52,9 @@ export function Modal({
 
   const classes = visible ? `${overlayClassName} ${visibleClassName}` : overlayClassName;
 
+  const target =
+    (portalSelector ? document.querySelector(portalSelector) : null) ?? document.body;
+
   return createPortal(
     <div
       className={classes}
@@ -58,6 +66,6 @@ export function Modal({
     >
       {children}
     </div>,
-    document.body,
+    target,
   );
 }

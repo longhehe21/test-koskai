@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useHoKhauFlowStore } from '@store/hoKhauFlowStore';
+import { useTamTruFlowStore } from '@store/tamTruFlowStore';
 
 interface ScanPage {
   name: string;
@@ -58,17 +59,132 @@ const STATIC_CONFIGS: Record<string, ScanConfig> = {
       { name: 'Xác nhận lưu trú' },
     ],
   },
-  '/scan-tam-tru': {
-    docImage: '/assets/mau-tam-tru.svg',
-    docLabel: 'Mẫu đăng ký tạm trú',
-    pageTitle: 'Quét tài liệu – Tạm trú',
-    nextRoute: '/xem-truoc-tam-tru',
-    pages: [
-      { name: 'Đăng ký tạm trú' },
-      { name: 'Giấy tờ chứng minh chỗ ở' },
-    ],
-  },
 };
+
+type TamTruScanVariant =
+  | 'thuoc-so-huu'
+  | 'khong-thuoc-so-huu'
+  | 'quan-doi-cong-an'
+  | 'phuong-tien'
+  | 'thue-muon-o-nho'
+  | 'gia-han-ca-nhan'
+  | 'gia-han-danh-sach'
+  | 'xoa-dang-ky';
+
+/** Build cfg động cho /scan-tam-tru* dựa vào tamTruFlowStore — chỉ scan tài liệu user "Đã có". */
+function buildTamTruCfg(variant: TamTruScanVariant): ScanConfig {
+  const flow = useTamTruFlowStore.getState();
+  const isDanhSach = variant === 'thuoc-so-huu';
+  const hasQ3 = variant === 'phuong-tien' || variant === 'gia-han-danh-sach';
+
+  const q1Doc: ScanPage = isDanhSach
+    ? {
+        name: 'Danh sách công dân đăng ký tạm trú',
+        image: '/assets/mau-danh-sach-tam-tru.svg',
+      }
+    : {
+        name: 'Tờ khai thay đổi thông tin cư trú (CT01)',
+        image: '/assets/mau-to-khai-ct01.svg',
+      };
+
+  const q2Doc: ScanPage = (() => {
+    if (variant === 'quan-doi-cong-an' || variant === 'gia-han-ca-nhan') {
+      return {
+        name: 'Giấy giới thiệu của Thủ trưởng đơn vị',
+        image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+      };
+    }
+    if (variant === 'phuong-tien') {
+      return {
+        name: 'Văn bản xác nhận của UBND cấp xã về địa điểm đậu đỗ phương tiện',
+        image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+      };
+    }
+    if (variant === 'thue-muon-o-nho') {
+      return {
+        name: 'Hợp đồng cho thuê / cho mượn / cho ở nhờ chỗ ở hợp pháp',
+        image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+      };
+    }
+    if (variant === 'gia-han-danh-sach') {
+      return {
+        name: 'Văn bản đề nghị gia hạn tạm trú kèm danh sách',
+        image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+      };
+    }
+    if (variant === 'xoa-dang-ky') {
+      const xoaCase = flow.xoaDangKyCase;
+      if (xoaCase === 'nhan-khau-khong-con-cho-o') {
+        return {
+          name: 'Giấy tờ, tài liệu chứng minh chỗ ở hợp pháp',
+          image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+        };
+      }
+      if (xoaCase === 'ca-ho-khong-con-cho-o') {
+        return {
+          name: 'Giấy tờ chứng minh về việc không còn chỗ ở hợp pháp',
+          image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+        };
+      }
+      return {
+        name: 'Giấy tờ đính kèm',
+        image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+      };
+    }
+    return {
+      name: 'Giấy tờ chứng minh chỗ ở',
+      image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+    };
+  })();
+
+  const q3Doc: ScanPage =
+    variant === 'gia-han-danh-sach'
+      ? {
+          name: 'Hợp đồng cho thuê / cho mượn / cho ở nhờ chỗ ở hợp pháp',
+          image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+        }
+      : {
+          name: 'Giấy chứng nhận đăng ký phương tiện + an toàn kỹ thuật',
+          image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+        };
+
+  // Xóa đăng ký 1-câu cases: chỉ Q1, không có Q2
+  const xoaOneDocCase =
+    variant === 'xoa-dang-ky' &&
+    flow.xoaDangKyCase !== 'nhan-khau-khong-con-cho-o' &&
+    flow.xoaDangKyCase !== 'ca-ho-khong-con-cho-o';
+  const hasQ2ForVariant = !xoaOneDocCase;
+
+  const pages: ScanPage[] = [];
+  if (flow.hasQ1) pages.push(q1Doc);
+  if (hasQ2ForVariant && flow.hasQ2) pages.push(q2Doc);
+  if (hasQ3 && flow.hasQ3) pages.push(q3Doc);
+  // Fallback: flow chưa set → scan đủ
+  if (pages.length === 0) {
+    pages.push(q1Doc);
+    if (hasQ2ForVariant) pages.push(q2Doc);
+    if (hasQ3) pages.push(q3Doc);
+  }
+
+  const nextRouteMap: Record<TamTruScanVariant, string> = {
+    'thuoc-so-huu': '/xem-truoc-tam-tru',
+    'khong-thuoc-so-huu': '/xem-truoc-tam-tru-ct01',
+    'quan-doi-cong-an': '/xem-truoc-tam-tru-quan-doi',
+    'phuong-tien': '/xem-truoc-tam-tru-phuong-tien',
+    'thue-muon-o-nho': '/xem-truoc-tam-tru-thue-muon',
+    'gia-han-ca-nhan': '/xem-truoc-gia-han',
+    'gia-han-danh-sach': '/xem-truoc-gia-han-danh-sach',
+    'xoa-dang-ky': '/xem-truoc-xoa-dang-ky',
+  };
+
+  return {
+    docImage: pages[0]?.image ?? q1Doc.image ?? '',
+    docLabel: isDanhSach ? 'Mẫu danh sách công dân đăng ký tạm trú' : 'Mẫu tờ khai CT01',
+    pageTitle: 'Quét tài liệu – Tạm trú',
+    nextRoute: nextRouteMap[variant],
+    pages,
+  };
+}
 
 /** Build cfg động cho /scan-ho-khau dựa vào hoKhauFlowStore (set bởi HoSoDinhKemModal). */
 function buildHoKhauCfg(): ScanConfig {
@@ -161,6 +277,14 @@ export default function ScanTaiLieuPage() {
 
   const cfg = useMemo<ScanConfig>(() => {
     if (location.pathname === '/scan-ho-khau') return buildHoKhauCfg();
+    if (location.pathname === '/scan-tam-tru') return buildTamTruCfg('thuoc-so-huu');
+    if (location.pathname === '/scan-tam-tru-ct01') return buildTamTruCfg('khong-thuoc-so-huu');
+    if (location.pathname === '/scan-tam-tru-quan-doi') return buildTamTruCfg('quan-doi-cong-an');
+    if (location.pathname === '/scan-tam-tru-phuong-tien') return buildTamTruCfg('phuong-tien');
+    if (location.pathname === '/scan-tam-tru-thue-muon') return buildTamTruCfg('thue-muon-o-nho');
+    if (location.pathname === '/scan-gia-han') return buildTamTruCfg('gia-han-ca-nhan');
+    if (location.pathname === '/scan-gia-han-danh-sach') return buildTamTruCfg('gia-han-danh-sach');
+    if (location.pathname === '/scan-xoa-dang-ky') return buildTamTruCfg('xoa-dang-ky');
     return STATIC_CONFIGS[location.pathname] ?? STATIC_CONFIGS['/scan-tam-vang'];
   }, [location.pathname]);
 

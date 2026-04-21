@@ -1,4 +1,5 @@
 import '@styles/pages/ho-khau-ho-so-dinh-kem.css';
+import '@styles/pages/xac-dinh-doi-tuong.css';
 import { Fragment } from 'react';
 import { Modal } from './Modal';
 
@@ -12,6 +13,8 @@ interface ConfirmModalProps {
   backLabel?: string;
   continueLabel?: string;
   title?: string;
+  /** Pass-through cho Modal.portalSelector — scope overlay vào panel. */
+  portalSelector?: string;
 }
 
 export function ConfirmModal({
@@ -22,6 +25,7 @@ export function ConfirmModal({
   backLabel = 'Quay lại bổ sung',
   continueLabel = 'Tiếp tục',
   title = 'Thông báo',
+  portalSelector,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -29,6 +33,7 @@ export function ConfirmModal({
       overlayClassName="hkhsdk-confirm-overlay"
       visibleClassName="hkhsdk-confirm-overlay--visible"
       onClose={onBack}
+      portalSelector={portalSelector}
     >
       <div className="confirm-novb-modal" onClick={(e) => e.stopPropagation()}>
         <button className="confirm-novb-close" onClick={onBack} aria-label="Đóng">

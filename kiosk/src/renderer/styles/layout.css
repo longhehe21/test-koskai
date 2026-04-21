@@ -141,7 +141,7 @@
 
 /* Left AI panel — 30% fixed */
 .kiosk-ai-panel {
-  flex: 0 0 30%;
+  flex: 0 0 40%;
   background: linear-gradient(170deg, #799dff 0%, #4a7af5 30%, #2563eb 60%, #0052d0 100%);
   display: flex;
   flex-direction: column;
@@ -151,7 +151,7 @@
 
 /* Right content panel — 70% */
 .kiosk-content-panel {
-  flex: 0 0 70%;
+  flex: 0 0 60%;
   position: relative;
   overflow: hidden;
   display: flex;

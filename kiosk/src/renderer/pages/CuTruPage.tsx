@@ -96,7 +96,7 @@ export default function CuTruPage() {
     } else if (id === 'luu-tru') {
       window.setTimeout(() => setLuuTruOpen(true), 400);
     } else if (id === 'tam-tru') {
-      window.setTimeout(() => navigate('/tam-tru-ho-so'), 400);
+      window.setTimeout(() => navigate('/tam-tru-thu-tuc'), 400);
     } else if (id === 'ho-khau') {
       window.setTimeout(() => navigate('/ho-khau-truong-hop'), 400);
     }

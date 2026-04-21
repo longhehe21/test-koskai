@@ -206,6 +206,45 @@ export const CT02_BACK_BODY = `
   </div>
 `;
 
+export const DANH_SACH_TAM_TRU_BODY = `
+  <p class="xths-doc-note-top">Mẫu ban hành kèm theo hồ sơ đăng ký tạm trú theo danh sách</p>
+  <div class="xths-doc-top">
+    <div class="xths-doc-top-left">
+      <p class="xths-doc-org-dotted">..........................................<sup>(Cơ quan)</sup></p>
+      <p class="xths-doc-org-dotted">..........................................<sup>(Địa điểm)</sup></p>
+    </div>
+    <div class="xths-doc-top-right">
+      <p class="xths-doc-quochieu">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+      <p class="xths-doc-tieungu"><strong>Độc lập – Tự do – Hạnh phúc</strong></p>
+      <div class="xths-doc-line"></div>
+    </div>
+  </div>
+  <h2 class="xths-doc-title">DANH SÁCH CÔNG DÂN ĐĂNG KÝ TẠM TRÚ</h2>
+  <p class="xths-doc-subtitle" style="text-align:center;font-style:italic;margin:0 0 16px;">Kê khai thông tin các công dân đăng ký tạm trú tại địa điểm trên</p>
+  <table class="xths-doc-table">
+    <thead>
+      <tr>
+        <th style="width:48px">STT</th>
+        <th>Số ĐDCN</th>
+        <th>Họ và tên</th>
+        <th>Ngày tháng năm sinh</th>
+        <th>Giới tính</th>
+        <th>Thời hạn tạm trú đến ngày</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${Array.from({ length: 10 }, (_, i) => `<tr><td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+    </tbody>
+  </table>
+  <div class="xths-doc-signature xths-doc-signature--right" style="margin-top:32px">
+    <div class="xths-doc-sign-col">
+      <p class="xths-doc-sign-role"><strong>CÔNG DÂN KÊ KHAI</strong></p>
+      <p class="xths-doc-sign-note"><em>(Ký, ghi rõ họ tên)</em></p>
+      <div class="xths-sign-space"></div>
+    </div>
+  </div>
+`;
+
 export const QSDD_OCR_HTML = `
   <div class="xths-ocr-panel">
     <h2 class="xths-ocr-title">TRÍCH XUẤT DỮ LIỆU OCR</h2>
