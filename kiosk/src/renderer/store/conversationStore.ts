@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 
 export type ConversationState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'SPEAKING';
-export type MuseTalkStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+export type MuseTalkStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'error'
+  | 'unconfigured';
 
 export interface ChatMessage {
   id: string;

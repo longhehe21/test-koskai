@@ -17,8 +17,21 @@
  *  - Auto-reconnect với exponential backoff (1s → 2s → 4s, tối đa 5 lần).
  */
 
-// C3: Không fallback về IP hardcode — env var phải được set (cùng guard với ConversationController)
-const WS_URL = import.meta.env.RENDERER_VITE_MUSETALK_URL as string;
+// Env optional — nếu chưa cấu hình, MuseTalk tắt mềm. Caller phải check
+// isMuseTalkConfigured() trước khi gọi connect() để UI không bị throw.
+const WS_URL_BASE = import.meta.env.RENDERER_VITE_MUSETALK_URL as string | undefined;
+const API_TOKEN   = import.meta.env.RENDERER_VITE_MUSETALK_TOKEN as string | undefined;
+
+export function isMuseTalkConfigured(): boolean {
+  return Boolean(WS_URL_BASE && API_TOKEN);
+}
+
+// Browser WebSocket API không cho gắn custom header → token đi qua query param.
+// Dùng wss:// + nginx reverse proxy nếu cần bảo vệ token khỏi sniff trên internet công cộng.
+function buildWsUrl(): string | null {
+  if (!WS_URL_BASE || !API_TOKEN) return null;
+  return `${WS_URL_BASE}${WS_URL_BASE.includes('?') ? '&' : '?'}token=${encodeURIComponent(API_TOKEN)}`;
+}
 
 const DEFAULT_AVATAR_ID   = 'idle_nhanvien';
 const DEFAULT_AVATAR_PATH = 'data/video/idle_nhanvien.mp4';
@@ -132,7 +145,15 @@ export class MuseTalkClient {
       reject?.(err);
     }, CONNECT_TIMEOUT_MS);
 
-    this.ws = new WebSocket(WS_URL);
+    const wsUrl = buildWsUrl();
+    if (!wsUrl) {
+      this.clearConnectTimer();
+      const err = new Error('MuseTalk: thiếu RENDERER_VITE_MUSETALK_URL / RENDERER_VITE_MUSETALK_TOKEN');
+      reject?.(err);
+      return;
+    }
+
+    this.ws = new WebSocket(wsUrl);
     this.ws.binaryType = 'arraybuffer';
 
     this.ws.onopen = () => {

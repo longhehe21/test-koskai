@@ -9,6 +9,7 @@ const STATUS_DOT: Record<MuseTalkStatus, { bg: string; pulse: boolean }> = {
   connecting: { bg: '#ffb648', pulse: true },
   connected: { bg: '#3ddc84', pulse: false },
   error: { bg: '#ff5566', pulse: true },
+  unconfigured: { bg: '#9ca3af', pulse: false },
 };
 
 const STATUS_LABEL: Record<MuseTalkStatus, string> = {
@@ -16,6 +17,7 @@ const STATUS_LABEL: Record<MuseTalkStatus, string> = {
   connecting: 'Đang kết nối MuseTalk…',
   connected: 'Sẵn sàng',
   error: 'Lỗi kết nối',
+  unconfigured: 'MuseTalk chưa cấu hình',
 };
 
 export function AiSidebar() {
@@ -95,7 +97,11 @@ export function AiSidebar() {
                 />
               </svg>
               <span className="text-sm font-semibold text-white">
-                {museTalkStatus === 'connected' ? 'Chạm để bắt đầu' : 'Đang kết nối…'}
+                {museTalkStatus === 'connected'
+                  ? 'Chạm để bắt đầu'
+                  : museTalkStatus === 'unconfigured'
+                    ? 'Chưa cấu hình MuseTalk'
+                    : 'Đang kết nối…'}
               </span>
             </button>
           )}

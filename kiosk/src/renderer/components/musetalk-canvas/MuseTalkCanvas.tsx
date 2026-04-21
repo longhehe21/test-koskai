@@ -191,7 +191,7 @@ export const MuseTalkCanvas = forwardRef<MuseTalkCanvasHandle, MuseTalkCanvasPro
           className={`absolute inset-0 h-full w-full transition-opacity duration-150 ${
             isSpeaking ? 'opacity-100' : 'opacity-0'
           }`}
-          style={{ display: 'block' }}
+          style={{ display: 'block', objectFit: 'cover' }}
         />
       </div>
     );

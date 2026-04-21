@@ -1,12 +1,14 @@
 import { MicrophoneCapture } from './MicrophoneCapture';
-import { MuseTalkClient, type MuseTalkFrameCallback } from './MuseTalkClient';
+import { MuseTalkClient, isMuseTalkConfigured, type MuseTalkFrameCallback } from './MuseTalkClient';
 import type { ConversationState } from '@store/conversationStore';
 
-// C3: Không fallback về IP hardcode — env var phải được set
-const MUSETALK_URL = import.meta.env.RENDERER_VITE_MUSETALK_URL as string | undefined;
-if (!MUSETALK_URL) throw new Error('RENDERER_VITE_MUSETALK_URL is not configured in kiosk/.env');
+// Env optional — nếu chưa cấu hình, MuseTalk tắt mềm, UI vẫn load bình thường.
+const MUSETALK_URL   = import.meta.env.RENDERER_VITE_MUSETALK_URL as string | undefined;
+const MUSETALK_TOKEN = import.meta.env.RENDERER_VITE_MUSETALK_TOKEN as string | undefined;
 
-const HTTP_BASE = MUSETALK_URL.replace(/^ws/, 'http').replace('/avatar', '');
+const HTTP_BASE = MUSETALK_URL
+  ? MUSETALK_URL.replace(/^ws/, 'http').replace('/avatar', '')
+  : null;
 
 export type { ConversationState };
 
@@ -43,7 +45,7 @@ export interface ConversationEvents {
   onTranscript:     (text: string) => void;
   onResponse:       (text: string) => void;
   onError:          (message: string) => void;
-  onMuseTalkStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void;
+  onMuseTalkStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error' | 'unconfigured') => void;
   onFrame:          MuseTalkFrameCallback;
   /** getElapsedMs trả về ms đã phát — dùng audio.currentTime * 1000 */
   onStartSync:      (getElapsedMs: () => number) => void;
@@ -55,6 +57,7 @@ export class ConversationController {
   private readonly mic:      MicrophoneCapture;
   private readonly events:   ConversationEvents;
   private readonly musetalk: MuseTalkClient;
+  private readonly configured: boolean;
 
   private audio = new Audio();
   private currentWavUrl: string | null = null;
@@ -69,6 +72,7 @@ export class ConversationController {
   constructor(events: ConversationEvents) {
     this.events = events;
     this.mic = new MicrophoneCapture();
+    this.configured = isMuseTalkConfigured();
 
     this.musetalk = new MuseTalkClient({
       onFrame: events.onFrame,
@@ -80,6 +84,11 @@ export class ConversationController {
       },
     });
 
+    if (!this.configured) {
+      events.onMuseTalkStatus('unconfigured');
+      return;
+    }
+
     events.onMuseTalkStatus('connecting');
     void this.initMuseTalk();
   }
@@ -87,9 +96,11 @@ export class ConversationController {
   // ── Init MuseTalk ───────────────────────────────────────────────────────
 
   private async initMuseTalk(): Promise<void> {
+    if (!HTTP_BASE || !MUSETALK_TOKEN) return;  // guarded by this.configured, nhưng narrow type cho TS
     try {
       const res = await fetch(`${HTTP_BASE}/next_idle`, {
         signal: AbortSignal.timeout(5_000),
+        headers: { Authorization: `Bearer ${MUSETALK_TOKEN}` },
       });
       if (res.ok) {
         const data = (await res.json()) as { avatar_id: string; avatar_path: string };
@@ -110,7 +121,7 @@ export class ConversationController {
 
   /** Gọi một lần sau khi user tap. AI chào → lắng nghe vô hạn. */
   begin(): void {
-    if (this.started || this.disposed) return;
+    if (this.started || this.disposed || !this.configured) return;
     this.started = true;
     console.log('[CC] begin()');
     void this.speakThenListen(GREETING_TEXT);
