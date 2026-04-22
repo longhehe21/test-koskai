@@ -199,6 +199,7 @@ export default function XacDinhDoiTuongPage() {
         overlayClassName="hsdk-overlay"
         visibleClassName="hsdk-overlay--visible"
         onClose={closeModal}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="hsdk-modal" onClick={(e) => e.stopPropagation()}>
           <h1 className="hsdk-title">HỒ SƠ ĐÍNH KÈM</h1>
@@ -291,6 +292,7 @@ export default function XacDinhDoiTuongPage() {
         overlayClassName="maudon-overlay"
         visibleClassName="maudon-overlay--visible"
         onClose={() => setShowPreview(false)}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="maudon-container" onClick={(e) => e.stopPropagation()}>
           <button

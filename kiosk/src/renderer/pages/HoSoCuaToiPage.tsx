@@ -497,51 +497,92 @@ export default function HoSoCuaToiPage() {
         </div>
 
         <div className="hsct-table-wrap">
-          <div className="hsct-table-scroll">
-            <table className="hsct-table">
-              <thead>
-                <tr>
-                  <th>STT</th>
-                  <th>MÃ HỒ SƠ</th>
-                  <th>TÊN THỦ TỤC</th>
-                  <th>NGÀY CẬP NHẬT</th>
-                  <th>TRẠNG THÁI</th>
-                  <th>THAO TÁC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => {
-                  const cfg = STATUS_CONFIG[r.status];
-                  return (
-                    <tr key={r.stt} data-status={r.status}>
-                      <td className="hsct-td-stt">{pad(r.stt)}</td>
-                      <td>
-                        <a
-                          className="hsct-code"
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate('/xem-truoc-ho-so');
-                          }}
-                        >
-                          {r.code}
-                        </a>
-                      </td>
-                      <td>{r.name}</td>
-                      <td>{r.updated}</td>
-                      <td>
-                        <span className={`hsct-status ${cfg.cls}`}>{cfg.label}</span>
-                      </td>
-                      <td>
-                        <div className="hsct-actions">{getActionsJsx(r.status)}</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          {filtered.length === 0 ? (
+            <div className="hsct-empty">
+              <svg
+                width="72"
+                height="72"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <circle cx="12" cy="15" r="0.6" fill="currentColor" />
+                <path d="M12 11v2" />
+              </svg>
+              <h3 className="hsct-empty-title">
+                {filterStatus === 'all'
+                  ? 'Bạn chưa có hồ sơ nào'
+                  : `Không có hồ sơ ở trạng thái "${statusLabel}"`}
+              </h3>
+              <p className="hsct-empty-desc">
+                {filterStatus === 'all'
+                  ? 'Các hồ sơ bạn tạo hoặc lưu nháp sẽ hiển thị tại đây.'
+                  : 'Thử chọn trạng thái khác hoặc xem tất cả hồ sơ của bạn.'}
+              </p>
+              {filterStatus !== 'all' && (
+                <button
+                  type="button"
+                  className="hsct-empty-btn"
+                  onClick={() => setFilterStatus('all')}
+                >
+                  Xem tất cả hồ sơ
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="hsct-table-scroll">
+              <table className="hsct-table">
+                <thead>
+                  <tr>
+                    <th>STT</th>
+                    <th>MÃ HỒ SƠ</th>
+                    <th>TÊN THỦ TỤC</th>
+                    <th>NGÀY CẬP NHẬT</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>THAO TÁC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r) => {
+                    const cfg = STATUS_CONFIG[r.status];
+                    return (
+                      <tr key={r.stt} data-status={r.status}>
+                        <td className="hsct-td-stt">{pad(r.stt)}</td>
+                        <td>
+                          <a
+                            className="hsct-code"
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate('/xem-truoc-ho-so');
+                            }}
+                          >
+                            {r.code}
+                          </a>
+                        </td>
+                        <td>{r.name}</td>
+                        <td>{r.updated}</td>
+                        <td>
+                          <span className={`hsct-status ${cfg.cls}`}>{cfg.label}</span>
+                        </td>
+                        <td>
+                          <div className="hsct-actions">{getActionsJsx(r.status)}</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
+          {filtered.length > 0 && (
           <div className="hsct-pagination">
             <span className="hsct-pagination-info">
               Hiển thị 1-{filtered.length} trên tổng số {filtered.length} hồ sơ
@@ -564,6 +605,7 @@ export default function HoSoCuaToiPage() {
               </button>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

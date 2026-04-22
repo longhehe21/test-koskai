@@ -1,12 +1,22 @@
 import '@styles/pages/nop-ho-so-thanh-cong.css';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { submitFeedback } from '@services/feedbackService';
+import { sound } from '@services/soundService';
+import { PrintPreviewModal } from '@components/ui';
+import { fireConfetti } from '@utils/confetti';
 
 // Mã hồ sơ hiện hardcode — sau này lấy từ navigation state hoặc store khi
-// backend trả về mã thật. Dùng chung cho copy + feedback.applicationId.
+// backend trả về mã thật.
 const APPLICATION_CODE = '24.03.15.000124';
+
+// Auto-redirect sau khi user không tương tác: khác auto-logout toàn cục,
+// trang success KHÔNG đăng xuất — user vừa nộp hồ sơ xong, còn đang trong
+// session dịch vụ công, chỉ về trang chọn dịch vụ để tiếp tục thao tác khác
+// (vd nộp thêm thủ tục). Không purge session.
+const AUTO_REDIRECT_IDLE_MS = 30_000;
+const AUTO_REDIRECT_COUNTDOWN_MS = 15_000;
 
 // Placeholder QR rects — port nguyên từ UI repo (mô phỏng mã QR hiển thị).
 const QR_RECTS: Array<[number, number, number?]> = [
@@ -29,8 +39,75 @@ export default function NopHoSoThanhCongPage() {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+
+  // Auto-redirect về trang chủ sau khi user không tương tác. Khác với
+  // auto-logout #1 toàn cục: ở đây không cần warning modal vì không có PII
+  // cần bảo vệ — chỉ để kiosk ready cho user tiếp theo.
+  const [countdownMs, setCountdownMs] = useState<number | null>(null);
+  const idleTimerRef = useRef<number | null>(null);
+  const countdownIntervalRef = useRef<number | null>(null);
+  const countdownDeadlineRef = useRef<number>(0);
 
   usePageHeader({ title: 'Xác nhận nộp hồ sơ', showBack: false });
+
+  // Phát "ding" success + confetti celebration khi trang mount.
+  // (TTS đọc mã hồ sơ sẽ do AI assistant đảm nhận khi tích hợp sau.)
+  useEffect(() => {
+    sound.success();
+    fireConfetti(40);
+  }, []);
+
+  useEffect(() => {
+    const clearCountdown = () => {
+      if (countdownIntervalRef.current !== null) {
+        window.clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    };
+
+    const goHome = () => {
+      clearCountdown();
+      // Không purge session — user chỉ quay về trang dịch vụ, vẫn giữ đăng nhập.
+      navigate('/services', { replace: true });
+    };
+
+    const startCountdown = () => {
+      countdownDeadlineRef.current = Date.now() + AUTO_REDIRECT_COUNTDOWN_MS;
+      setCountdownMs(AUTO_REDIRECT_COUNTDOWN_MS);
+      countdownIntervalRef.current = window.setInterval(() => {
+        const remaining = countdownDeadlineRef.current - Date.now();
+        if (remaining <= 0) {
+          goHome();
+        } else {
+          setCountdownMs(remaining);
+        }
+      }, 200);
+    };
+
+    const resetIdle = () => {
+      // Countdown đang chạy → user chạm để hủy, ở lại trang.
+      if (countdownIntervalRef.current !== null) {
+        clearCountdown();
+        setCountdownMs(null);
+      }
+      if (idleTimerRef.current !== null) {
+        window.clearTimeout(idleTimerRef.current);
+      }
+      idleTimerRef.current = window.setTimeout(startCountdown, AUTO_REDIRECT_IDLE_MS);
+    };
+
+    resetIdle();
+
+    const events: (keyof DocumentEventMap)[] = ['pointerdown', 'touchstart', 'keydown'];
+    events.forEach((e) => document.addEventListener(e, resetIdle));
+
+    return () => {
+      if (idleTimerRef.current !== null) window.clearTimeout(idleTimerRef.current);
+      clearCountdown();
+      events.forEach((e) => document.removeEventListener(e, resetIdle));
+    };
+  }, [navigate]);
 
   const handleSubmitFeedback = async () => {
     if (rating < 1 || submitting) return;
@@ -43,15 +120,38 @@ export default function NopHoSoThanhCongPage() {
       comment: comment.trim() || undefined,
     });
     setSubmitting(false);
-    if (result.success) setSubmitted(true);
+    if (result.success) {
+      sound.success();
+      setSubmitted(true);
+    } else {
+      sound.error();
+    }
   };
 
   // displayRating = hover (preview) > rating đã chọn. Trên kiosk touch thì
   // hover ít xảy ra nhưng vẫn hữu ích cho test trên máy dev.
   const displayRating = hoverRating || rating;
 
+  const countdownSec =
+    countdownMs !== null ? Math.max(1, Math.ceil(countdownMs / 1000)) : null;
+  const countdownProgressPct =
+    countdownMs !== null ? (countdownMs / AUTO_REDIRECT_COUNTDOWN_MS) * 100 : 0;
+
   return (
     <div className="nhstc-area">
+      {countdownSec !== null && (
+        <div className="nhstc-autoredirect" role="status">
+          <span className="nhstc-autoredirect-text">
+            Tự động về trang dịch vụ sau <strong>{countdownSec}s</strong>. Chạm màn hình để hủy.
+          </span>
+          <div className="nhstc-autoredirect-bar">
+            <div
+              className="nhstc-autoredirect-bar-fill"
+              style={{ width: `${countdownProgressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
       <div className="nhstc-body">
         <div className="nhstc-left">
           <div className="nhstc-icon">
@@ -77,24 +177,17 @@ export default function NopHoSoThanhCongPage() {
               <div className="nhstc-card-col">
                 <span className="nhstc-card-label">MÃ HỒ SƠ</span>
                 <div className="nhstc-card-value">
-                  {APPLICATION_CODE}
-                  <button
-                    className="nhstc-copy-btn"
-                    onClick={() => navigator.clipboard?.writeText(APPLICATION_CODE)}
-                    aria-label="Sao chép mã hồ sơ"
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="9" y="9" width="13" height="13" rx="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  </button>
+                  <span className="nhstc-code-reveal">
+                    {APPLICATION_CODE.split('').map((ch, i) => (
+                      <span
+                        key={i}
+                        className="nhstc-code-char"
+                        style={{ animationDelay: `${i * 45}ms` }}
+                      >
+                        {ch}
+                      </span>
+                    ))}
+                  </span>
                 </div>
               </div>
               <div className="nhstc-card-divider" />
@@ -105,20 +198,43 @@ export default function NopHoSoThanhCongPage() {
             </div>
           </div>
 
-          <button className="nhstc-home-btn" onClick={() => navigate('/services')}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          <div className="nhstc-cta-row">
+            <button
+              className="nhstc-print-btn"
+              onClick={() => setShowPrintPreview(true)}
             >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            Về trang chủ
-          </button>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              In phiếu biên nhận
+            </button>
+
+            <button className="nhstc-home-btn" onClick={() => navigate('/services')}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              Về trang chủ
+            </button>
+          </div>
 
           {/* Feedback section — cùng cột với success info, phân tách bằng divider */}
           <div className="nhstc-feedback">
@@ -146,15 +262,25 @@ export default function NopHoSoThanhCongPage() {
                   Vui lòng chia sẻ trải nghiệm của bạn để chúng tôi cải thiện tốt hơn.
                 </p>
 
-                <div className="nhstc-stars" onMouseLeave={() => setHoverRating(0)}>
-                  {[1, 2, 3, 4, 5].map((value) => {
+                {/* key={rating} remount stars khi đổi rating → wave animation replay */}
+                <div
+                  className="nhstc-stars"
+                  key={rating}
+                  onMouseLeave={() => setHoverRating(0)}
+                >
+                  {[1, 2, 3, 4, 5].map((value, index) => {
                     const active = value <= displayRating;
                     return (
                       <button
                         key={value}
                         type="button"
                         className={`nhstc-star${active ? ' nhstc-star--active' : ''}`}
-                        onClick={() => setRating(value)}
+                        style={{ ['--star-index' as string]: index }}
+                        data-no-sound="true"
+                        onClick={() => {
+                          sound.star(value);
+                          setRating(value);
+                        }}
                         onMouseEnter={() => setHoverRating(value)}
                         aria-label={`${value} sao`}
                       >
@@ -209,6 +335,18 @@ export default function NopHoSoThanhCongPage() {
           <p className="nhstc-qr-hint">Sử dụng Camera hoặc ứng dụng Zalo để quét nhanh mã phía trên.</p>
         </div>
       </div>
+
+      <PrintPreviewModal
+        open={showPrintPreview}
+        onClose={() => setShowPrintPreview(false)}
+        data={{
+          applicationCode: APPLICATION_CODE,
+          procedureName: 'Đăng ký thường trú',
+          submittedAt: '15/03/2024 · 14:20',
+          processingDays: 15,
+          expectedResultDate: '30/03/2024',
+        }}
+      />
     </div>
   );
 }

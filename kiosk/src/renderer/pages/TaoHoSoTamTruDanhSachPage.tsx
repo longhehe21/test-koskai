@@ -4,7 +4,12 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import {
+  ConfirmSubmitModal,
+  UnsavedChangesModal,
+} from '@components/ui';
 import {
   Dropdown,
   DatePicker,
@@ -178,6 +183,13 @@ export default function TaoHoSoTamTruDanhSachPage() {
   // Commit + draft
   const [committed, setCommitted] = useState(false);
   const [showDraft, setShowDraft] = useState(false);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = () => {
+    if (!isDirty) setIsDirty(true);
+  };
+  const { guard, proceed, cancel, isPrompting } = useUnsavedChangesGuard(isDirty);
 
   // Handlers — Section I
   const handleS1Ward = (item: DropdownItem) => {
@@ -225,12 +237,22 @@ export default function TaoHoSoTamTruDanhSachPage() {
 
   const handleSubmit = () => {
     if (!committed) return;
+    setShowConfirmSubmit(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmSubmit(false);
+    setIsDirty(false);
     navigate('/nop-ho-so-thanh-cong');
   };
 
   return (
     <>
-      <div className="tkbtv-area">
+      <div
+        className="tkbtv-area"
+        onFocusCapture={markDirty}
+        onChangeCapture={markDirty}
+      >
         <h1 className="tkbtv-page-title">HỒ SƠ ĐĂNG KÝ TẠM TRÚ</h1>
         <p className="tkbtv-page-subtitle">
           Ghi chú: Các thông tin có dấu (*) là thông tin bắt buộc phải nhập
@@ -882,7 +904,7 @@ export default function TaoHoSoTamTruDanhSachPage() {
         </div>
 
         <FormFooter
-          onBack={() => navigate(-1)}
+          onBack={() => guard(() => navigate(-1))}
           onDraft={() => setShowDraft(true)}
           onSubmit={handleSubmit}
           submitEnabled={committed}
@@ -894,6 +916,23 @@ export default function TaoHoSoTamTruDanhSachPage() {
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
         onList={() => navigate('/ho-so-cua-toi?status=draft')}
+      />
+
+      <UnsavedChangesModal
+        open={isPrompting}
+        onClose={cancel}
+        onSaveDraft={() => {
+          cancel();
+          setShowDraft(true);
+        }}
+        onDiscard={proceed}
+      />
+
+      <ConfirmSubmitModal
+        open={showConfirmSubmit}
+        onCancel={() => setShowConfirmSubmit(false)}
+        onConfirm={handleConfirmSubmit}
+        title="Xác nhận nộp hồ sơ đăng ký tạm trú theo danh sách"
       />
     </>
   );

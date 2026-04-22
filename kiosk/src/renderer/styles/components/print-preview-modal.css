@@ -1,0 +1,222 @@
+/* ===== PrintPreviewModal — preview phiếu biên nhận 80mm thermal ===== */
+
+.ppm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  padding: 24px;
+}
+
+.ppm-overlay--visible {
+  opacity: 1;
+}
+
+.ppm-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  transform: translateY(8px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100% - 32px);
+  display: flex;
+  flex-direction: column;
+}
+
+.ppm-overlay--visible .ppm-modal {
+  transform: translateY(0) scale(1);
+}
+
+.ppm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ppm-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.ppm-close {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.ppm-close:hover {
+  background: #f3f4f6;
+}
+
+/* Giả lập giấy thermal 80mm */
+.ppm-receipt {
+  background: #fafafa;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  padding: 18px 16px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 12px;
+  color: #1f2937;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+
+.ppm-receipt-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.ppm-receipt-brand {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.ppm-receipt-sub {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.ppm-receipt-divider {
+  border-top: 1px dashed #9ca3af;
+  margin: 10px 0;
+}
+
+.ppm-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ppm-receipt-label {
+  color: #6b7280;
+}
+
+.ppm-receipt-value {
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ppm-receipt-code {
+  color: #111827;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.ppm-receipt-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.ppm-receipt-qr-hint {
+  font-size: 10px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.ppm-receipt-footer {
+  text-align: center;
+  font-size: 10.5px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.ppm-error {
+  font-size: 12px;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.ppm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ppm-btn {
+  width: 100%;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ppm-btn--primary {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #ffffff;
+}
+
+.ppm-btn--primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.ppm-btn--primary:disabled {
+  background: #93c5fd;
+  border-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+.ppm-btn--outline {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.ppm-btn--outline:hover {
+  background: #f1f5f9;
+}
+
+.ppm-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}
+
+.ppm-success-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+}

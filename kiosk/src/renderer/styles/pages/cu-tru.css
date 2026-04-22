@@ -10,9 +10,48 @@
 .cutru-heading {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  /* Gradient blue→violet, premium feel */
+  background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
   text-align: center;
   margin-bottom: 32px;
+}
+
+/* Footer + Quay lại — style giống ho-khau-truong-hop */
+.cutru-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.cutru-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cutru-btn--back {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.cutru-btn--back:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
 .cutru-grid {

@@ -186,30 +186,24 @@ export function TamTruHoSoDinhKemModal({
     if (hasQ2 && !q2) return;
     if (hasQ3Question && !q3) return;
 
-    // Q1 "Chưa có" (không có CT01/đơn chính) → đi thẳng form, KHÔNG confirm
-    if (q1 === 'no') {
-      onSubmit({ q1, q2: q2 ?? 'yes', q3, target: formRoute });
+    // Thu thập tất cả giấy tờ "Chưa có" — bao gồm cả Q1 (đơn chính) nếu thiếu.
+    // User phải confirm trước khi đi tiếp, bất kể đơn chính hay giấy tờ kèm thiếu.
+    const missing: string[] = [];
+    if (q1 === 'no') missing.push(q1Label);
+    if (hasQ2 && q2 === 'no') missing.push(resolvedQ2Label);
+    if (hasQ3Question && q3 === 'no' && q3Label) missing.push(q3Label);
+
+    // Không thiếu gì → scan ngay, không cần confirm
+    if (missing.length === 0) {
+      onSubmit({ q1, q2: q2 ?? 'yes', q3, target: scanRoute });
       return;
     }
 
-    // Mode 1 câu hỏi, Q1 "Đã có" → scan ngay
-    if (!hasQ2) {
-      onSubmit({ q1, q2: 'yes', target: scanRoute });
-      return;
-    }
-
-    // Q1 "Đã có" + tất cả giấy tờ kèm "Đã có" → scan ngay, không cần confirm
-    const allAttachmentsYes = q2 === 'yes' && (!hasQ3Question || q3 === 'yes');
-    if (allAttachmentsYes) {
-      onSubmit({ q1, q2, q3, target: scanRoute });
-      return;
-    }
-
-    // Q1 "Đã có" + thiếu giấy tờ kèm → ConfirmModal (cảnh báo thiếu) → scan
-    const highlight: string[] = [];
-    if (q2 === 'no') highlight.push(resolvedQ2Label);
-    if (hasQ3Question && q3 === 'no' && q3Label) highlight.push(q3Label);
-    setConfirmState({ highlight, target: scanRoute });
+    // Có thiếu → ConfirmModal cảnh báo. Target:
+    //  - Q1 "Chưa có" (đơn chính thiếu): formRoute (cần fill CT01)
+    //  - Q1 "Đã có" nhưng Q2/Q3 thiếu: scanRoute (scan Q1, bổ sung Q2/Q3 sau)
+    const target = q1 === 'no' ? formRoute : scanRoute;
+    setConfirmState({ highlight: missing, target });
   };
 
   const handleConfirmContinue = () => {

@@ -25,7 +25,9 @@ export function ConfirmModal({
   backLabel = 'Quay lại bổ sung',
   continueLabel = 'Tiếp tục',
   title = 'Thông báo',
-  portalSelector,
+  // Mặc định scope vào panel content 70% phải (rule feedback_modal_scoping) —
+  // AI sidebar 30% trái giữ sáng. Caller có thể override nếu cần full viewport.
+  portalSelector = '.kiosk-content-panel',
 }: ConfirmModalProps) {
   return (
     <Modal

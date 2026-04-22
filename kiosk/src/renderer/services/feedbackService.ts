@@ -19,6 +19,9 @@ export interface FeedbackResult {
  * `fetch('/api/feedbacks', ...)` khi server sẵn sàng.
  */
 export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackResult> {
+  // Payload log để dev kiểm tra payload hợp lệ trước khi plug API thật.
+  // eslint-disable-next-line no-console
+  console.debug('[feedback] submit', payload);
   await new Promise((resolve) => setTimeout(resolve, 400)); // simulate latency
   return { success: true };
 }

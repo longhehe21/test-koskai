@@ -41,6 +41,61 @@
   margin: 0;
 }
 
+/* Empty state — filter không ra kết quả hoặc chưa có hồ sơ nào */
+.hsct-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 60px 32px 72px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.hsct-empty svg {
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.hsct-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+  margin: 0;
+}
+
+.hsct-empty-desc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 12px;
+  max-width: 380px;
+}
+
+.hsct-empty-btn {
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.hsct-empty-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.hsct-empty-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}
+
 .hsct-home-btn {
   display: inline-flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import '@styles/pages/draft-saved-modal.css';
 import { Modal } from './Modal';
+import { useModalSound } from '@hooks/useModalSound';
 
 interface DraftSavedToastProps {
   open: boolean;
@@ -16,6 +17,7 @@ export function DraftSavedToast({
   onList,
   listLabel = 'Xem danh sách bản nháp',
 }: DraftSavedToastProps) {
+  useModalSound(open);
   const handleContinue = () => {
     onContinue?.();
     onClose?.();

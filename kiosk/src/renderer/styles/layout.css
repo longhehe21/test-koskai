@@ -23,23 +23,6 @@
   gap: 12px;
 }
 
-.header-back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: transparent;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.header-back-btn:hover {
-  background: #f3f4f6;
-}
-
 .header-logo {
   font-size: 17px;
   font-weight: 800;
@@ -64,16 +47,92 @@
   gap: 6px;
 }
 
+.header-user-wrap {
+  position: relative;
+}
+
 .header-user-badge {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 24px;
+  padding: 8px 18px 8px 22px;
   background: linear-gradient(90deg, #0052d0 0%, #799dff 100%);
   color: #ffffff;
+  border: none;
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.header-user-badge:hover {
+  filter: brightness(1.08);
+}
+
+.header-user-badge:active {
+  transform: scale(0.97);
+}
+
+.header-user-caret {
+  transition: transform 0.18s ease;
+}
+
+.header-user-badge--open .header-user-caret {
+  transform: rotate(180deg);
+}
+
+.header-user-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  z-index: 100;
+  animation: header-user-menu-in 0.15s ease-out;
+}
+
+@keyframes header-user-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #374151;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+
+.header-user-menu-item:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.header-user-menu-item:hover svg {
+  stroke: #dc2626;
 }
 
 .header-docs-btn {
@@ -114,9 +173,73 @@
   background: #e5e7eb;
 }
 
-.settings-btn {
+/* Font scale accessibility — A-/A+ trong header.
+   Design: A nhỏ + dấu trừ (thu nhỏ) | A lớn + dấu cộng (phóng to) — visual
+   cue trực quan cho người già, không cần đọc. */
+.font-scale-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.font-scale-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 44px;
+  height: 36px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #1e293b;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.font-scale-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.font-scale-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.font-scale-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  transition: transform 0.1s ease-out;
+}
+
+.font-scale-letter {
+  font-weight: 800;
+  line-height: 1;
+}
+
+.font-scale-letter--sm {
+  font-size: 12px;
+}
+
+.font-scale-letter--lg {
+  font-size: 18px;
+}
+
+.font-scale-sign {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mute-btn {
   width: 34px;
   height: 34px;
+  border: none;
   border-radius: 8px;
   background: transparent;
   color: #9ca3af;
@@ -124,11 +247,50 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
-.settings-btn:hover {
+.mute-btn:hover {
   background: #f3f4f6;
+  color: #374151;
+}
+
+/* --- Hotline pill (fix cứng trong header) --- */
+.kiosk-hotline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  color: #1e40af;
+  margin-right: 4px;
+}
+
+.kiosk-hotline-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.kiosk-hotline-label {
+  color: #475569;
+  font-weight: 500;
+}
+
+.kiosk-hotline-divider {
+  width: 1px;
+  height: 11px;
+  background: #cbd5e1;
+}
+
+.kiosk-hotline-number {
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #1d4ed8;
+  font-variant-numeric: tabular-nums;
 }
 
 /* --- Body --- */
@@ -149,25 +311,32 @@
   color: #ffffff;
 }
 
-/* Right content panel — 70% */
+/* Right content panel — 70%.
+   zoom theo --kiosk-font-scale: Chromium scale toàn bộ (text/button/spacing
+   hardcode px) — phù hợp accessibility A+/A- vì codebase dùng px rộng rãi.
+   flex-direction: column để chứa FlowStepper (trên) + route-view (còn lại). */
 .kiosk-content-panel {
   flex: 0 0 60%;
   position: relative;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 24px;
+  flex-direction: column;
+  padding: 0;
   background: #f0f2f5;
+  zoom: var(--kiosk-font-scale, 1);
 }
 
-/* Slide animation on route change */
+/* Slide animation on route change + center content (vì panel giờ column,
+   padding content dời xuống route-view để stepper full-width) */
 .kiosk-content-panel > .route-view {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px 24px;
+  overflow: hidden;
 }
 
 .kiosk-content-panel > .route-view.panel-slide-in {
@@ -213,6 +382,7 @@
 .ai-panel-canvas-wrapper {
   flex: 1;
   min-height: 0;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,6 +390,126 @@
   overflow: hidden;
   background: rgba(0, 0, 0, 0.2);
   box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+/* ===== AI state animations — box-shadow rings pulse quanh canvas ===== */
+
+/* IDLE — thở subtle: shadow ring mờ ảo nhịp 4s */
+.ai-panel-canvas-wrapper[data-ai-state='IDLE'] {
+  animation: ai-breathe 4s ease-in-out infinite;
+}
+@keyframes ai-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 0 rgba(255, 255, 255, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 10px rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* LISTENING — nhịp tim cyan expanding ring */
+.ai-panel-canvas-wrapper[data-ai-state='LISTENING'] {
+  animation: ai-listen 1.5s ease-out infinite;
+}
+@keyframes ai-listen {
+  0% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 0 rgba(56, 189, 248, 0.55);
+  }
+  100% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 24px rgba(56, 189, 248, 0);
+  }
+}
+
+/* SPEAKING — 2 ring violet gợn sóng kế tiếp */
+.ai-panel-canvas-wrapper[data-ai-state='SPEAKING'] {
+  animation: ai-speak 1.4s ease-out infinite;
+}
+@keyframes ai-speak {
+  0% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 0 rgba(167, 139, 250, 0.6),
+      0 0 0 0 rgba(167, 139, 250, 0.3);
+  }
+  60% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 14px rgba(167, 139, 250, 0),
+      0 0 0 8px rgba(167, 139, 250, 0.25);
+  }
+  100% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 28px rgba(167, 139, 250, 0),
+      0 0 0 20px rgba(167, 139, 250, 0);
+  }
+}
+
+/* PROCESSING — outline amber pulse chậm */
+.ai-panel-canvas-wrapper[data-ai-state='PROCESSING'] {
+  animation: ai-process 1.8s ease-in-out infinite;
+}
+@keyframes ai-process {
+  0%,
+  100% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 2px rgba(255, 184, 72, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 0 2px rgba(255, 184, 72, 0.15);
+  }
+}
+
+/* ===== Sparkles — 6 hạt random bay trong canvas khi LISTENING/SPEAKING ===== */
+.ai-panel-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ai-sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, rgba(255, 255, 255, 0.6) 40%, transparent 70%);
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  animation: ai-sparkle 2.2s ease-in-out infinite;
+}
+
+.ai-sparkle--1 { top: 15%; left: 20%; animation-delay: 0s; }
+.ai-sparkle--2 { top: 30%; left: 75%; animation-delay: 0.4s; }
+.ai-sparkle--3 { top: 55%; left: 12%; animation-delay: 0.8s; }
+.ai-sparkle--4 { top: 68%; left: 85%; animation-delay: 1.2s; }
+.ai-sparkle--5 { top: 85%; left: 35%; animation-delay: 1.6s; }
+.ai-sparkle--6 { top: 45%; left: 50%; animation-delay: 2.0s; }
+
+@keyframes ai-sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40%,
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .ai-panel-voice-wrapper {
@@ -230,4 +520,139 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================================
+   Global touch feedback — press state + ripple + card depth.
+   Kiosk touch screen cần feedback thị giác rõ để user biết đã
+   bấm trúng (tránh double-tap).
+   ============================================================ */
+
+/* ===== Confetti — bắn khi nộp hồ sơ thành công ===== */
+.kiosk-confetti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.kiosk-confetti {
+  position: absolute;
+  animation: kiosk-confetti-fall linear forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes kiosk-confetti-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--drift-x, 0), 80vh) rotate(var(--rotate, 360deg));
+    opacity: 0;
+  }
+}
+
+/* Ripple effect — span được JS inject vào button khi pointerdown.
+   Button phải có position: relative + overflow: hidden (set bên dưới
+   theo từng class main-action). */
+.kiosk-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.28;
+  pointer-events: none;
+  transform: scale(0);
+  animation: kiosk-ripple 0.55s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes kiosk-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Buttons có ripple — cần relative + overflow hidden để ripple không tràn.
+   Match với RIPPLE_SELECTOR trong useGlobalClickSound. */
+.nhstc-submit-btn,
+.nhstc-home-btn,
+.nhstc-print-btn,
+.cutru-btn,
+.cutru-card,
+.hktrh-btn,
+.hktrh-card,
+.tkbtv-footer-btn,
+.ttbl-ft-btn,
+.csm-btn,
+.ucm-btn,
+.iwm-btn,
+.ppm-btn,
+.dsm-btn,
+.hsct-home-btn,
+.hsct-empty-btn,
+.hsct-page-btn,
+.header-user-badge,
+.header-docs-btn,
+.font-scale-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Card press-depth — "lún xuống" khi chạm, giống phím cơ */
+.cutru-card:active,
+.hktrh-card:active,
+.hktrh-card.hktrh-card--active,
+.cutru-card.cutru-card-active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+/* Glow pulse trên primary buttons enabled — subtle hướng user bấm tiếp */
+@keyframes kiosk-btn-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.18);
+  }
+}
+
+.nhstc-submit-btn:not(:disabled),
+.csm-btn--primary,
+.tkbtv-footer-btn--submit:not(.tkbtv-footer-btn--disabled):not(:disabled),
+.ttbl-ft-btn--submit:not(:disabled),
+.xths-footer-btn--submit:not(:disabled) {
+  animation: kiosk-btn-glow 2.4s ease-in-out infinite;
+}
+
+/* Tắt glow khi button đang bị press để tránh conflict với transform */
+.nhstc-submit-btn:not(:disabled):active,
+.csm-btn--primary:active,
+.tkbtv-footer-btn--submit:not(:disabled):active,
+.ttbl-ft-btn--submit:not(:disabled):active {
+  animation: none;
+}
+
+.nhstc-home-btn:active:not(:disabled),
+.nhstc-print-btn:active:not(:disabled),
+.nhstc-submit-btn:active:not(:disabled),
+.cutru-btn:active:not(:disabled),
+.hsct-home-btn:active:not(:disabled),
+.dsm-btn--primary:active:not(:disabled),
+.dsm-btn--outline:active:not(:disabled),
+.tkbtv-footer-btn--submit:active:not(:disabled),
+.tkbtv-footer-btn--back:active:not(:disabled),
+.tkbtv-footer-btn--draft:active:not(:disabled),
+.ttbl-ft-btn--submit:active:not(:disabled),
+.ttbl-ft-btn--back:active:not(:disabled),
+.ttbl-ft-btn--draft:active:not(:disabled),
+.xths-footer-btn--submit:active:not(:disabled),
+.tkbtv-upload-btn--primary:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
 }

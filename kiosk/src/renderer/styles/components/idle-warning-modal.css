@@ -1,0 +1,132 @@
+/* ===== IdleWarningModal — full-screen vì phải bắt attention tuyệt đối ===== */
+
+/* Scope vào .kiosk-content-panel (70% phải) — absolute không fixed,
+   AI sidebar trái giữ nguyên sáng. */
+.iwm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  padding: 24px;
+}
+
+.iwm-overlay--visible {
+  opacity: 1;
+}
+
+.iwm-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px 32px 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  transform: translateY(8px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.iwm-overlay--visible .iwm-modal {
+  transform: translateY(0) scale(1);
+}
+
+.iwm-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+  animation: iwm-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes iwm-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.iwm-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px;
+}
+
+.iwm-desc {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.55;
+  margin: 0 0 18px;
+}
+
+.iwm-countdown {
+  color: #dc2626;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.iwm-progress {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+
+.iwm-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #fbbf24, #dc2626);
+  border-radius: 999px;
+  /* Transition 100ms đồng bộ interval tick — bar co liên tục, không jump step. */
+  transition: width 0.1s linear;
+}
+
+.iwm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.iwm-btn {
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.iwm-btn--primary {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #ffffff;
+}
+
+.iwm-btn--primary:hover {
+  background: #1d4ed8;
+}
+
+.iwm-btn--outline {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.iwm-btn--outline:hover {
+  background: #f1f5f9;
+}
+
+.iwm-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}

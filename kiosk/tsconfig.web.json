@@ -15,7 +15,8 @@
       "@store/*": ["./src/renderer/store/*"],
       "@styles/*": ["./src/renderer/styles/*"],
       "@assets/*": ["./public/assets/*"],
-      "@hooks/*": ["./src/renderer/hooks/*"]
+      "@hooks/*": ["./src/renderer/hooks/*"],
+      "@utils/*": ["./src/renderer/utils/*"]
     }
   },
   "include": ["src/renderer/**/*.ts", "src/renderer/**/*.tsx"]
