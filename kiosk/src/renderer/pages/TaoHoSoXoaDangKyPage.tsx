@@ -657,7 +657,7 @@ export default function TaoHoSoXoaDangKyPage() {
         open={showDraft}
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
-        onList={() => navigate('/ho-so-cua-toi')}
+        onList={() => navigate('/ho-so-cua-toi?status=draft')}
       />
     </>
   );

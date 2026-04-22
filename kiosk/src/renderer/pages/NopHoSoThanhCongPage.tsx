@@ -1,6 +1,12 @@
 import '@styles/pages/nop-ho-so-thanh-cong.css';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
+import { submitFeedback } from '@services/feedbackService';
+
+// Mã hồ sơ hiện hardcode — sau này lấy từ navigation state hoặc store khi
+// backend trả về mã thật. Dùng chung cho copy + feedback.applicationId.
+const APPLICATION_CODE = '24.03.15.000124';
 
 // Placeholder QR rects — port nguyên từ UI repo (mô phỏng mã QR hiển thị).
 const QR_RECTS: Array<[number, number, number?]> = [
@@ -17,7 +23,32 @@ const QR_RECTS: Array<[number, number, number?]> = [
 export default function NopHoSoThanhCongPage() {
   const navigate = useNavigate();
 
+  // rating=0 nghĩa là chưa chọn sao nào; submit disabled đến khi >=1.
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
   usePageHeader({ title: 'Xác nhận nộp hồ sơ', showBack: false });
+
+  const handleSubmitFeedback = async () => {
+    if (rating < 1 || submitting) return;
+    setSubmitting(true);
+    // Gọi service layer — khi backend sẵn sàng chỉ cần sửa trong feedbackService,
+    // component không phải đổi gì. Lỗi để silent + retry button cho đỡ vỡ UX kiosk.
+    const result = await submitFeedback({
+      applicationId: APPLICATION_CODE,
+      ratingScore: rating,
+      comment: comment.trim() || undefined,
+    });
+    setSubmitting(false);
+    if (result.success) setSubmitted(true);
+  };
+
+  // displayRating = hover (preview) > rating đã chọn. Trên kiosk touch thì
+  // hover ít xảy ra nhưng vẫn hữu ích cho test trên máy dev.
+  const displayRating = hoverRating || rating;
 
   return (
     <div className="nhstc-area">
@@ -46,10 +77,10 @@ export default function NopHoSoThanhCongPage() {
               <div className="nhstc-card-col">
                 <span className="nhstc-card-label">MÃ HỒ SƠ</span>
                 <div className="nhstc-card-value">
-                  24.03.15.000124
+                  {APPLICATION_CODE}
                   <button
                     className="nhstc-copy-btn"
-                    onClick={() => navigator.clipboard?.writeText('24.03.15.000124')}
+                    onClick={() => navigator.clipboard?.writeText(APPLICATION_CODE)}
                     aria-label="Sao chép mã hồ sơ"
                   >
                     <svg
@@ -88,11 +119,77 @@ export default function NopHoSoThanhCongPage() {
             </svg>
             Về trang chủ
           </button>
+
+          {/* Feedback section — cùng cột với success info, phân tách bằng divider */}
+          <div className="nhstc-feedback">
+            {submitted ? (
+              <div className="nhstc-feedback-thanks">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="11" fill="#22c55e" />
+                  <path
+                    d="M7 12l3.5 3.5L17 9"
+                    stroke="#ffffff"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <h3 className="nhstc-feedback-thanks-title">Cảm ơn bạn đã đánh giá!</h3>
+                <p className="nhstc-feedback-thanks-desc">
+                  Phản hồi của bạn giúp chúng tôi cải thiện dịch vụ tốt hơn.
+                </p>
+              </div>
+            ) : (
+              <>
+                <h2 className="nhstc-feedback-title">Đánh giá dịch vụ</h2>
+                <p className="nhstc-feedback-desc">
+                  Vui lòng chia sẻ trải nghiệm của bạn để chúng tôi cải thiện tốt hơn.
+                </p>
+
+                <div className="nhstc-stars" onMouseLeave={() => setHoverRating(0)}>
+                  {[1, 2, 3, 4, 5].map((value) => {
+                    const active = value <= displayRating;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`nhstc-star${active ? ' nhstc-star--active' : ''}`}
+                        onClick={() => setRating(value)}
+                        onMouseEnter={() => setHoverRating(value)}
+                        aria-label={`${value} sao`}
+                      >
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <textarea
+                  className="nhstc-comment"
+                  placeholder="Nhập ý kiến đóng góp của bạn..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={1}
+                />
+
+                <button
+                  type="button"
+                  className="nhstc-submit-btn"
+                  onClick={handleSubmitFeedback}
+                  disabled={rating < 1 || submitting}
+                >
+                  {submitting ? 'Đang gửi...' : 'Gửi đánh giá'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="nhstc-right">
           <div className="nhstc-qr-box">
-            <svg className="nhstc-qr-placeholder" width="260" height="260" viewBox="0 0 140 140">
+            <svg className="nhstc-qr-placeholder" width="200" height="200" viewBox="0 0 140 140">
               <rect width="140" height="140" fill="#ffffff" rx="8" />
               <rect x="12" y="12" width="36" height="36" rx="4" fill="#1e293b" />
               <rect x="16" y="16" width="28" height="28" rx="2" fill="#ffffff" />

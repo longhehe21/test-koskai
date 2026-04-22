@@ -499,7 +499,7 @@ export default function TaoThongBaoLuuTruPage() {
       <DraftSavedToast
         open={showDraft}
         onClose={() => setShowDraft(false)}
-        onList={() => navigate('/ho-so-cua-toi')}
+        onList={() => navigate('/ho-so-cua-toi?status=draft')}
       />
     </>
   );

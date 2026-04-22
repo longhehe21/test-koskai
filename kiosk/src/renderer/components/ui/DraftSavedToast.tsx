@@ -32,6 +32,7 @@ export function DraftSavedToast({
       visibleClassName="dsm-overlay--visible"
       closeDurationMs={220}
       onClose={onClose}
+      portalSelector=".kiosk-content-panel"
     >
       <div className="dsm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="dsm-icon">

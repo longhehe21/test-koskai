@@ -1,9 +1,19 @@
 import '@styles/pages/ho-so-cua-toi.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 
 type Status = 'draft' | 'processing' | 'approved' | 'rejected';
+type StatusFilter = Status | 'all';
+
+const VALID_STATUS_FILTERS: readonly StatusFilter[] = ['all', 'draft', 'processing', 'approved', 'rejected'];
+
+// Đọc ?status=<code> từ URL — dùng khi DraftSavedToast/nơi khác điều hướng kèm preset filter.
+// Code không hợp lệ hoặc không có → fallback về 'all'.
+function parseStatusParam(raw: string | null): StatusFilter {
+  if (!raw) return 'all';
+  return (VALID_STATUS_FILTERS as readonly string[]).includes(raw) ? (raw as StatusFilter) : 'all';
+}
 
 interface DocRecord {
   stt: number;
@@ -212,7 +222,12 @@ const STATUS_OPTIONS: { code: Status | 'all'; label: string }[] = [
 
 export default function HoSoCuaToiPage() {
   const navigate = useNavigate();
-  const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
+  const [searchParams] = useSearchParams();
+  // Init filter từ URL param ?status=<code> (cross-file: DraftSavedToast.onList
+  // truyền 'draft' để mở trang tự lọc bản nháp). User vẫn đổi được sau đó.
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>(() =>
+    parseStatusParam(searchParams.get('status')),
+  );
   const [appliedFrom, setAppliedFrom] = useState<Date | null>(null);
   const [appliedTo, setAppliedTo] = useState<Date | null>(null);
 
@@ -320,7 +335,20 @@ export default function HoSoCuaToiPage() {
   return (
     <div className="hsct-area">
       <div className="hsct-content">
-        <h1 className="hsct-title">Danh sách tất cả hồ sơ</h1>
+        <div className="hsct-header-row">
+          <h1 className="hsct-title">Danh sách tất cả hồ sơ</h1>
+          <button
+            type="button"
+            className="hsct-home-btn"
+            onClick={() => navigate('/services')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 11l9-8 9 8" />
+              <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10" />
+            </svg>
+            Về trang chủ
+          </button>
+        </div>
         <p className="hsct-subtitle">
           Quản lý và theo dõi toàn bộ vòng đời của các hồ sơ ứng tuyển, từ khâu khởi tạo đến khi
           phê duyệt cuối cùng. Hệ thống hiển thị trạng thái thời gian thực của mọi quy trình thủ
