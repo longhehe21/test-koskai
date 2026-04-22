@@ -4,15 +4,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import {
+  ConfirmSubmitModal,
   Dropdown,
   MultiSelect,
   Modal,
   DraftSavedToast,
   FormFooter,
   ProvinceWardSelect,
+  UnsavedChangesModal,
   type DropdownItem,
 } from '@components/ui';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
 import { NguoiLuuTruModal } from './tao-thong-bao-luu-tru/NguoiLuuTruModal';
 
 type AddrType = 'thuong-tru' | 'tam-tru' | 'khac';
@@ -96,6 +99,13 @@ export default function TaoThongBaoLuuTruPage() {
   const [showThemNguoi, setShowThemNguoi] = useState(false);
   const [showMauPreview, setShowMauPreview] = useState(false);
   const [showDraft, setShowDraft] = useState(false);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = () => {
+    if (!isDirty) setIsDirty(true);
+  };
+  const { guard, proceed, cancel, isPrompting } = useUnsavedChangesGuard(isDirty);
 
   // Apply address type — auto-fill from CCCD + readonly
   useEffect(() => {
@@ -127,12 +137,22 @@ export default function TaoThongBaoLuuTruPage() {
 
   const handleSubmit = () => {
     if (!committed) return;
+    setShowConfirmSubmit(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmSubmit(false);
+    setIsDirty(false);
     navigate('/nop-ho-so-thanh-cong');
   };
 
   return (
     <>
-      <div className="ttbl-area">
+      <div
+        className="ttbl-area"
+        onFocusCapture={markDirty}
+        onChangeCapture={markDirty}
+      >
         <h1 className="ttbl-heading">TẠO MỚI THÔNG BÁO LƯU TRÚ</h1>
 
         <div className="ttbl-form">
@@ -453,7 +473,7 @@ export default function TaoThongBaoLuuTruPage() {
 
         <FormFooter
           variant="ttbl"
-          onBack={() => navigate(-1)}
+          onBack={() => guard(() => navigate(-1))}
           onDraft={() => setShowDraft(true)}
           onSubmit={handleSubmit}
           submitEnabled={committed}
@@ -471,6 +491,7 @@ export default function TaoThongBaoLuuTruPage() {
         overlayClassName="maudon-overlay"
         visibleClassName="maudon-overlay--visible"
         onClose={() => setShowMauPreview(false)}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="maudon-container" onClick={(e) => e.stopPropagation()}>
           <button
@@ -499,7 +520,24 @@ export default function TaoThongBaoLuuTruPage() {
       <DraftSavedToast
         open={showDraft}
         onClose={() => setShowDraft(false)}
-        onList={() => navigate('/ho-so-cua-toi')}
+        onList={() => navigate('/ho-so-cua-toi?status=draft')}
+      />
+
+      <UnsavedChangesModal
+        open={isPrompting}
+        onClose={cancel}
+        onSaveDraft={() => {
+          cancel();
+          setShowDraft(true);
+        }}
+        onDiscard={proceed}
+      />
+
+      <ConfirmSubmitModal
+        open={showConfirmSubmit}
+        onCancel={() => setShowConfirmSubmit(false)}
+        onConfirm={handleConfirmSubmit}
+        title="Xác nhận gửi thông báo lưu trú"
       />
     </>
   );

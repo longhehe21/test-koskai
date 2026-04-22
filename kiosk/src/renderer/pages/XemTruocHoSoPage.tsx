@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useHoKhauFlowStore } from '@store/hoKhauFlowStore';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { sound } from '@services/soundService';
 import {
   CT01_BACK_BODY,
   CT01_BODY,
@@ -327,6 +328,10 @@ export default function XemTruocHoSoPage() {
   usePageHeader({ title: cfg.pageTitle });
 
   const [activeIdx, setActiveIdx] = useState(0);
+  // Progress OCR — 0..100 sync với reveal animation, hiện box "TIẾN ĐỘ X%"
+  // bên dưới + vòng ring. Done=true khi verify đã xong → vòng ring → tick.
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrDone, setOcrDone] = useState(false);
   const scanFrameRef = useRef<HTMLDivElement>(null);
   const ocrScrollRef = useRef<HTMLDivElement>(null);
 
@@ -338,10 +343,15 @@ export default function XemTruocHoSoPage() {
   const mode = activePage.ocrHTML ? 'ocr' : 'docx';
   const docBodyHTML = activePage.docBodyHTML ?? cfg.docBodyHTML;
 
-  // Scan beam + OCR sequential reveal animation khi page ở OCR mode.
-  // Reset state mỗi lần đổi page/mode để animation chạy lại.
+  // Scan beam + OCR sequential reveal + progress % + sound. Reset mỗi lần
+  // đổi page/mode. Progress counter chạy RAF loop liên tục trong suốt sequence,
+  // tick sound khi field reveal, success sound khi verify done.
   useEffect(() => {
-    if (mode !== 'ocr') return;
+    if (mode !== 'ocr') {
+      setOcrProgress(0);
+      setOcrDone(false);
+      return;
+    }
     const frame = scanFrameRef.current;
     const container = ocrScrollRef.current;
     if (!frame || !container) return;
@@ -353,10 +363,15 @@ export default function XemTruocHoSoPage() {
     const verify = container.querySelector<HTMLElement>('.xths-ocr-verify');
     values.forEach((el) => el.classList.remove('xths-ocr-filled', 'xths-ocr-scrambling'));
     verify?.classList.remove('xths-ocr-filled', 'xths-ocr-verify--done');
+    setOcrProgress(0);
+    setOcrDone(false);
 
     const timeouts: number[] = [];
     timeouts.push(
-      window.setTimeout(() => frame.classList.add('xths-scan-frame--scanning'), 80),
+      window.setTimeout(() => {
+        frame.classList.add('xths-scan-frame--scanning');
+        sound.whoosh(); // scan beam bắt đầu → whoosh sweep
+      }, 80),
     );
 
     const revealStart = 500;
@@ -364,7 +379,10 @@ export default function XemTruocHoSoPage() {
     values.forEach((el, i) => {
       const t = revealStart + i * stepMs;
       timeouts.push(
-        window.setTimeout(() => el.classList.add('xths-ocr-scrambling'), t),
+        window.setTimeout(() => {
+          el.classList.add('xths-ocr-scrambling');
+          sound.pip(); // pip ngắn — OCR field extracted
+        }, t),
       );
       timeouts.push(
         window.setTimeout(() => {
@@ -383,11 +401,30 @@ export default function XemTruocHoSoPage() {
       }, finishT),
     );
     timeouts.push(
-      window.setTimeout(() => verify?.classList.add('xths-ocr-verify--done'), finishT + 600),
+      window.setTimeout(() => {
+        verify?.classList.add('xths-ocr-verify--done');
+        setOcrDone(true);
+        sound.success(); // celebrate — OCR xác thực hoàn tất
+      }, finishT + 600),
     );
+
+    // RAF loop update progress 0 → 100 tuyến tính theo thời gian
+    const totalDuration = finishT + 600;
+    const startTime = performance.now();
+    let rafId = 0;
+    const tick = () => {
+      const elapsed = performance.now() - startTime;
+      const pct = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+      setOcrProgress(pct);
+      if (elapsed < totalDuration) {
+        rafId = requestAnimationFrame(tick);
+      }
+    };
+    rafId = requestAnimationFrame(tick);
 
     return () => {
       timeouts.forEach((t) => window.clearTimeout(t));
+      cancelAnimationFrame(rafId);
     };
   }, [mode, activeIdx]);
 
@@ -445,11 +482,37 @@ export default function XemTruocHoSoPage() {
               />
             </div>
           ) : (
-            <div
-              ref={ocrScrollRef}
-              className="xths-ocr-scroll"
-              dangerouslySetInnerHTML={{ __html: activePage.ocrHTML ?? '' }}
-            />
+            <>
+              <div
+                ref={ocrScrollRef}
+                className="xths-ocr-scroll"
+                dangerouslySetInnerHTML={{ __html: activePage.ocrHTML ?? '' }}
+              />
+              {/* Progress box — 2 card song song dưới OCR panel */}
+              <div className="xths-ocr-progress">
+                <div className="xths-ocr-progress-card xths-ocr-progress-card--pct">
+                  <div className="xths-ocr-progress-col">
+                    <span className="xths-ocr-progress-label">TIẾN ĐỘ</span>
+                    <span className="xths-ocr-progress-value">
+                      <span className="xths-ocr-progress-num">{ocrProgress}%</span>
+                      <span className="xths-ocr-progress-caption">
+                        {ocrDone ? 'hoàn tất' : 'trích xuất'}
+                      </span>
+                    </span>
+                  </div>
+                  <div
+                    className={`xths-ocr-progress-ring${ocrDone ? ' xths-ocr-progress-ring--done' : ''}`}
+                    style={{ ['--ocr-ring-angle' as string]: `${ocrProgress * 3.6}deg` }}
+                  >
+                    {!ocrDone && <span className="xths-ocr-progress-ring-inner" />}
+                  </div>
+                </div>
+                <div className="xths-ocr-progress-card">
+                  <span className="xths-ocr-progress-label">LOẠI TÀI LIỆU</span>
+                  <span className="xths-ocr-progress-doctype">{activePage.label}</span>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -1,9 +1,19 @@
 import '@styles/pages/ho-so-cua-toi.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 
 type Status = 'draft' | 'processing' | 'approved' | 'rejected';
+type StatusFilter = Status | 'all';
+
+const VALID_STATUS_FILTERS: readonly StatusFilter[] = ['all', 'draft', 'processing', 'approved', 'rejected'];
+
+// Đọc ?status=<code> từ URL — dùng khi DraftSavedToast/nơi khác điều hướng kèm preset filter.
+// Code không hợp lệ hoặc không có → fallback về 'all'.
+function parseStatusParam(raw: string | null): StatusFilter {
+  if (!raw) return 'all';
+  return (VALID_STATUS_FILTERS as readonly string[]).includes(raw) ? (raw as StatusFilter) : 'all';
+}
 
 interface DocRecord {
   stt: number;
@@ -212,7 +222,12 @@ const STATUS_OPTIONS: { code: Status | 'all'; label: string }[] = [
 
 export default function HoSoCuaToiPage() {
   const navigate = useNavigate();
-  const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
+  const [searchParams] = useSearchParams();
+  // Init filter từ URL param ?status=<code> (cross-file: DraftSavedToast.onList
+  // truyền 'draft' để mở trang tự lọc bản nháp). User vẫn đổi được sau đó.
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>(() =>
+    parseStatusParam(searchParams.get('status')),
+  );
   const [appliedFrom, setAppliedFrom] = useState<Date | null>(null);
   const [appliedTo, setAppliedTo] = useState<Date | null>(null);
 
@@ -320,7 +335,20 @@ export default function HoSoCuaToiPage() {
   return (
     <div className="hsct-area">
       <div className="hsct-content">
-        <h1 className="hsct-title">Danh sách tất cả hồ sơ</h1>
+        <div className="hsct-header-row">
+          <h1 className="hsct-title">Danh sách tất cả hồ sơ</h1>
+          <button
+            type="button"
+            className="hsct-home-btn"
+            onClick={() => navigate('/services')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 11l9-8 9 8" />
+              <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10" />
+            </svg>
+            Về trang chủ
+          </button>
+        </div>
         <p className="hsct-subtitle">
           Quản lý và theo dõi toàn bộ vòng đời của các hồ sơ ứng tuyển, từ khâu khởi tạo đến khi
           phê duyệt cuối cùng. Hệ thống hiển thị trạng thái thời gian thực của mọi quy trình thủ
@@ -469,51 +497,92 @@ export default function HoSoCuaToiPage() {
         </div>
 
         <div className="hsct-table-wrap">
-          <div className="hsct-table-scroll">
-            <table className="hsct-table">
-              <thead>
-                <tr>
-                  <th>STT</th>
-                  <th>MÃ HỒ SƠ</th>
-                  <th>TÊN THỦ TỤC</th>
-                  <th>NGÀY CẬP NHẬT</th>
-                  <th>TRẠNG THÁI</th>
-                  <th>THAO TÁC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => {
-                  const cfg = STATUS_CONFIG[r.status];
-                  return (
-                    <tr key={r.stt} data-status={r.status}>
-                      <td className="hsct-td-stt">{pad(r.stt)}</td>
-                      <td>
-                        <a
-                          className="hsct-code"
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate('/xem-truoc-ho-so');
-                          }}
-                        >
-                          {r.code}
-                        </a>
-                      </td>
-                      <td>{r.name}</td>
-                      <td>{r.updated}</td>
-                      <td>
-                        <span className={`hsct-status ${cfg.cls}`}>{cfg.label}</span>
-                      </td>
-                      <td>
-                        <div className="hsct-actions">{getActionsJsx(r.status)}</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          {filtered.length === 0 ? (
+            <div className="hsct-empty">
+              <svg
+                width="72"
+                height="72"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <circle cx="12" cy="15" r="0.6" fill="currentColor" />
+                <path d="M12 11v2" />
+              </svg>
+              <h3 className="hsct-empty-title">
+                {filterStatus === 'all'
+                  ? 'Bạn chưa có hồ sơ nào'
+                  : `Không có hồ sơ ở trạng thái "${statusLabel}"`}
+              </h3>
+              <p className="hsct-empty-desc">
+                {filterStatus === 'all'
+                  ? 'Các hồ sơ bạn tạo hoặc lưu nháp sẽ hiển thị tại đây.'
+                  : 'Thử chọn trạng thái khác hoặc xem tất cả hồ sơ của bạn.'}
+              </p>
+              {filterStatus !== 'all' && (
+                <button
+                  type="button"
+                  className="hsct-empty-btn"
+                  onClick={() => setFilterStatus('all')}
+                >
+                  Xem tất cả hồ sơ
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="hsct-table-scroll">
+              <table className="hsct-table">
+                <thead>
+                  <tr>
+                    <th>STT</th>
+                    <th>MÃ HỒ SƠ</th>
+                    <th>TÊN THỦ TỤC</th>
+                    <th>NGÀY CẬP NHẬT</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>THAO TÁC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r) => {
+                    const cfg = STATUS_CONFIG[r.status];
+                    return (
+                      <tr key={r.stt} data-status={r.status}>
+                        <td className="hsct-td-stt">{pad(r.stt)}</td>
+                        <td>
+                          <a
+                            className="hsct-code"
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate('/xem-truoc-ho-so');
+                            }}
+                          >
+                            {r.code}
+                          </a>
+                        </td>
+                        <td>{r.name}</td>
+                        <td>{r.updated}</td>
+                        <td>
+                          <span className={`hsct-status ${cfg.cls}`}>{cfg.label}</span>
+                        </td>
+                        <td>
+                          <div className="hsct-actions">{getActionsJsx(r.status)}</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
+          {filtered.length > 0 && (
           <div className="hsct-pagination">
             <span className="hsct-pagination-info">
               Hiển thị 1-{filtered.length} trên tổng số {filtered.length} hồ sơ
@@ -536,6 +605,7 @@ export default function HoSoCuaToiPage() {
               </button>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

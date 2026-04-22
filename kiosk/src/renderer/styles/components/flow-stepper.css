@@ -1,0 +1,146 @@
+/* ===== Flow Stepper — progress bar trên đầu content panel ===== */
+
+.flow-stepper {
+  width: 100%;
+  padding: 12px 24px 8px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.flow-stepper-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-step {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.flow-step-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  min-width: 72px;
+}
+
+.flow-step-btn:disabled {
+  cursor: not-allowed;
+}
+
+.flow-step-btn:not(:disabled):hover .flow-step-marker {
+  transform: scale(1.08);
+}
+
+.flow-step-btn:not(:disabled):active .flow-step-marker {
+  transform: scale(0.95);
+}
+
+/* Marker tròn — circle cho active/done, circle số cho todo */
+.flow-step-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.flow-step-num {
+  line-height: 1;
+}
+
+.flow-step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+/* ===== State: DONE (xanh đầy, có tick) ===== */
+.flow-step--done .flow-step-marker {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.flow-step--done .flow-step-label {
+  color: #16a34a;
+}
+
+/* ===== State: ACTIVE (xanh nổi, số trắng trên nền xanh) ===== */
+.flow-step--active .flow-step-marker {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.flow-step--active .flow-step-label {
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+/* ===== State: TODO (xám, số xám trên nền xám nhạt) ===== */
+.flow-step--todo .flow-step-marker {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+}
+
+.flow-step--todo .flow-step-label {
+  color: #94a3b8;
+}
+
+/* ===== Connector line giữa các step — animate fill từ trái qua phải ===== */
+.flow-step-connector {
+  position: relative;
+  height: 2px;
+  width: 32px;
+  background: #e2e8f0;
+  margin: 0 4px;
+  margin-bottom: 18px; /* align với center của marker */
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+/* Fill bar chạy animate — width transition smooth 0.7s khi step done */
+.flow-step-connector::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  background: #22c55e;
+  border-radius: 1px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Connector sau step done → fill đầy (xanh lá) */
+.flow-step--done .flow-step-connector::before {
+  width: 100%;
+}
+
+/* Connector ngay trước step active → fill gradient green → blue */
+.flow-step--done:has(+ .flow-step--active) .flow-step-connector::before {
+  background: linear-gradient(90deg, #22c55e, #2563eb);
+}

@@ -30,6 +30,11 @@
   --ai-err: #ff5566;
 
   --radius: 14px;
+
+  /* Accessibility font scale — set bởi fontScaleService, 1.0 → 1.3.
+     Apply qua font-size trên .kiosk-content-panel (không scale AI sidebar
+     để giữ layout fixed). */
+  --kiosk-font-scale: 1;
 }
 
 * {

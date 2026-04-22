@@ -358,6 +358,139 @@
   justify-content: center;
 }
 
+/* ===== Progress Box — hiện dưới OCR panel ===== */
+.xths-ocr-progress {
+  display: none;
+}
+
+.xths-right[data-mode='ocr'] .xths-ocr-progress {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 16px 24px 20px;
+  flex-shrink: 0;
+}
+
+.xths-ocr-progress-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  min-height: 82px;
+  justify-content: center;
+}
+
+.xths-ocr-progress-card--pct {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.xths-ocr-progress-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xths-ocr-progress-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  letter-spacing: 0.6px;
+}
+
+.xths-ocr-progress-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.xths-ocr-progress-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.xths-ocr-progress-caption {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.xths-ocr-progress-doctype {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.45;
+}
+
+/* Circular progress ring — conic-gradient theo --ocr-ring-angle */
+.xths-ocr-progress-ring {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #2563eb var(--ocr-ring-angle, 0deg),
+    #dbeafe var(--ocr-ring-angle, 0deg)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s linear;
+}
+
+.xths-ocr-progress-ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: #eff6ff;
+  border-radius: 50%;
+}
+
+.xths-ocr-progress-ring-inner {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid #2563eb;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: xths-ocr-spin 0.9s linear infinite;
+  z-index: 1;
+}
+
+@keyframes xths-ocr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Done state: vòng ngoài quay liên tục với gradient highlight, center trống. */
+.xths-ocr-progress-ring--done {
+  background: conic-gradient(
+    from 0deg,
+    #1d4ed8 0deg,
+    #bfdbfe 90deg,
+    #60a5fa 180deg,
+    #2563eb 270deg,
+    #1d4ed8 360deg
+  );
+  animation: xths-ocr-ring-rotate 2.8s linear infinite;
+}
+
+@keyframes xths-ocr-ring-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ===== OCR Panel ===== */
 .xths-ocr-panel {
   display: flex;

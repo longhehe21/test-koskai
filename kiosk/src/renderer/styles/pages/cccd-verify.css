@@ -22,7 +22,11 @@
   flex-shrink: 0;
 }
 
-.cccd-verify-icon { margin-bottom: 4px; }
+.cccd-verify-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
 .cccd-verify-icon svg { width: 28px; height: 28px; }
 
 .cccd-verify-title {
@@ -150,10 +154,10 @@
 
 /* eKYC Frame - 3 layers stacked */
 .ekyc-frame {
-  width: 260px;
-  height: 260px;
+  width: 360px;
+  height: 480px;
   position: relative;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
   border: 1px solid #e2e8f0;
   margin-bottom: 12px;
@@ -175,7 +179,8 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: radial-gradient(circle 80px at center, transparent 100%, rgba(255,255,255,0.75) 100%);
+  /* Elliptical mask khớp aspect face (rộng ngắn, cao dài hơn) */
+  background: radial-gradient(ellipse 120px 160px at center, transparent 100%, rgba(255,255,255,0.75) 100%);
 }
 
 /* Layer 3: Corner brackets */
@@ -222,11 +227,11 @@
   border-bottom-right-radius: 8px;
 }
 
-/* Dashed circle guide */
+/* Dashed guide — ellipse (SVG circle stretch) cho khung face portrait */
 .ekyc-dashed-circle {
   position: absolute;
-  width: 180px;
-  height: 180px;
+  width: 240px;
+  height: 320px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -245,8 +250,8 @@
   color: #2563eb;
   text-align: center;
   line-height: 1.6;
-  max-width: 260px;
-  margin-top: 4px;
+  max-width: 360px;
+  margin-top: 8px;
 }
 
 /* ===== Footer Bar ===== */
@@ -305,14 +310,3 @@
 .cccd-btn-confirm:active { transform: translateY(0); }
 
 /* Hotline */
-.cccd-hotline {
-  font-size: 11px;
-  color: #9ca3af;
-  text-align: center;
-  padding: 6px 0 2px;
-  flex-shrink: 0;
-}
-
-.cccd-hotline strong {
-  color: #374151;
-}

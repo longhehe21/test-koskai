@@ -3,15 +3,18 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import {
+  ConfirmSubmitModal,
   DatePicker,
   Dropdown,
   MultiSelect,
   ProvinceWardSelect,
   DraftSavedToast,
   FormFooter,
+  UnsavedChangesModal,
   type DropdownItem,
 } from '@components/ui';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
 
 type ResidenceType = 'thuong-tru' | 'tam-tru' | 'khac';
 type NoiDenType = 'trong-nuoc' | 'nuoc-ngoai';
@@ -83,6 +86,13 @@ export default function TaoKhaiBaoTamVangPage() {
 
   // Commit + draft modal
   const [showDraft, setShowDraft] = useState(false);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = () => {
+    if (!isDirty) setIsDirty(true);
+  };
+  const { guard, proceed, cancel, isPrompting } = useUnsavedChangesGuard(isDirty);
 
   // Apply residence type → sync S2 + readonly
   useEffect(() => {
@@ -111,12 +121,22 @@ export default function TaoKhaiBaoTamVangPage() {
   };
 
   const handleSubmit = () => {
+    setShowConfirmSubmit(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmSubmit(false);
+    setIsDirty(false);
     navigate('/nop-ho-so-thanh-cong');
   };
 
   return (
     <>
-      <div className="tkbtv-area">
+      <div
+        className="tkbtv-area"
+        onFocusCapture={markDirty}
+        onChangeCapture={markDirty}
+      >
         <h1 className="tkbtv-page-title">TẠO MỚI KHAI BÁO TẠM VẮNG</h1>
 
         <div className="tkbtv-form">
@@ -480,7 +500,7 @@ export default function TaoKhaiBaoTamVangPage() {
         </div>
 
         <FormFooter
-          onBack={() => navigate(-1)}
+          onBack={() => guard(() => navigate(-1))}
           onDraft={() => setShowDraft(true)}
           onSubmit={handleSubmit}
         />
@@ -490,7 +510,24 @@ export default function TaoKhaiBaoTamVangPage() {
         open={showDraft}
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
-        onList={() => navigate('/ho-so-cua-toi')}
+        onList={() => navigate('/ho-so-cua-toi?status=draft')}
+      />
+
+      <UnsavedChangesModal
+        open={isPrompting}
+        onClose={cancel}
+        onSaveDraft={() => {
+          cancel();
+          setShowDraft(true);
+        }}
+        onDiscard={proceed}
+      />
+
+      <ConfirmSubmitModal
+        open={showConfirmSubmit}
+        onCancel={() => setShowConfirmSubmit(false)}
+        onConfirm={handleConfirmSubmit}
+        title="Xác nhận nộp hồ sơ khai báo tạm vắng"
       />
     </>
   );

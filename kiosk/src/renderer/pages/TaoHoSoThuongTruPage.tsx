@@ -2,14 +2,18 @@ import '@styles/pages/tao-ho-so-thuong-tru.css';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
+import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
 import {
+  ConfirmSubmitModal,
   Dropdown,
   DraftSavedToast,
   FormFooter,
   MultiSelect,
   ProvinceWardSelect,
+  UnsavedChangesModal,
   type DropdownItem,
 } from '@components/ui';
+import { sound } from '@services/soundService';
 import { Section3VN } from './tao-ho-so-thuong-tru/Section3VN';
 import { Section3VK } from './tao-ho-so-thuong-tru/Section3VK';
 import {
@@ -99,6 +103,15 @@ export default function TaoHoSoThuongTruPage() {
   // Commit
   const [committed, setCommitted] = useState(false);
   const [showDraft, setShowDraft] = useState(false);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+
+  // Dirty tracking: true khi user focus vào field bất kỳ lần đầu.
+  // onFocusCapture bắt event từ mọi input/textarea/button con.
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = () => {
+    if (!isDirty) setIsDirty(true);
+  };
+  const { guard, proceed, cancel, isPrompting } = useUnsavedChangesGuard(isDirty);
 
   const updateXinYKien = (id: number, patch: Partial<XinYKienRow>) => {
     setXinYKien((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -118,14 +131,26 @@ export default function TaoHoSoThuongTruPage() {
     setS1CoQuan({ code: `coquan-${item.code}`, name: `Công an ${item.name}` });
   };
 
+  // Bấm "Nộp hồ sơ" → mở modal xác nhận trước. Tránh nộp nhầm.
   const handleSubmit = () => {
     if (!committed) return;
+    setShowConfirmSubmit(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmSubmit(false);
+    setIsDirty(false); // Đã nộp → không cần guard khi navigate.
+    sound.success();
     navigate('/nop-ho-so-thanh-cong');
   };
 
   return (
     <>
-      <div className="tkbtv-area">
+      <div
+        className="tkbtv-area"
+        onFocusCapture={markDirty}
+        onChangeCapture={markDirty}
+      >
         <h1 className="tkbtv-page-title">HỒ SƠ ĐĂNG KÝ THƯỜNG TRÚ</h1>
         <p className="tkbtv-page-subtitle">
           Vui lòng chọn trường hợp đăng ký phù hợp để hệ thống hướng dẫn chuẩn bị hồ sơ đính kèm
@@ -544,7 +569,7 @@ export default function TaoHoSoThuongTruPage() {
         </div>
 
         <FormFooter
-          onBack={() => navigate(-1)}
+          onBack={() => guard(() => navigate(-1))}
           onDraft={() => setShowDraft(true)}
           onSubmit={handleSubmit}
           submitEnabled={committed}
@@ -555,7 +580,23 @@ export default function TaoHoSoThuongTruPage() {
         open={showDraft}
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
-        onList={() => navigate('/ho-so-cua-toi')}
+        onList={() => navigate('/ho-so-cua-toi?status=draft')}
+      />
+
+      <UnsavedChangesModal
+        open={isPrompting}
+        onClose={cancel}
+        onSaveDraft={() => {
+          cancel();
+          setShowDraft(true); // Mở flow lưu nháp — user có thể list hoặc tiếp tục.
+        }}
+        onDiscard={proceed}
+      />
+
+      <ConfirmSubmitModal
+        open={showConfirmSubmit}
+        onCancel={() => setShowConfirmSubmit(false)}
+        onConfirm={handleConfirmSubmit}
       />
     </>
   );

@@ -232,6 +232,7 @@ export function HoSoDinhKemModal({
         overlayClassName="hkhsdkm-overlay"
         visibleClassName="hkhsdkm-overlay--visible"
         onClose={onDismiss}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="hkhsdkm-modal" onClick={(e) => e.stopPropagation()}>
           <div className="hkhsdk-area">
@@ -305,6 +306,7 @@ export function HoSoDinhKemModal({
         overlayClassName="hkhsdk-maudon-overlay"
         visibleClassName="hkhsdk-maudon-overlay--visible"
         onClose={() => setShowPreview(false)}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="hkhsdk-maudon-container" onClick={(e) => e.stopPropagation()}>
           <button

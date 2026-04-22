@@ -45,12 +45,24 @@ export function AiSidebar() {
           <span>{STATUS_LABEL[museTalkStatus]}</span>
         </div>
 
-        <div className="ai-panel-canvas-wrapper">
+        <div className="ai-panel-canvas-wrapper" data-ai-state={state}>
           <MuseTalkCanvas
             ref={canvasRef}
             idleVideoUrl="/avatar-idle.mp4"
             className="h-full w-full"
           />
+
+          {/* Sparkles — chỉ hiện khi LISTENING/SPEAKING, absolute inside wrapper */}
+          {(state === 'LISTENING' || state === 'SPEAKING') && (
+            <div className="ai-panel-sparkles" aria-hidden="true">
+              <span className="ai-sparkle ai-sparkle--1" />
+              <span className="ai-sparkle ai-sparkle--2" />
+              <span className="ai-sparkle ai-sparkle--3" />
+              <span className="ai-sparkle ai-sparkle--4" />
+              <span className="ai-sparkle ai-sparkle--5" />
+              <span className="ai-sparkle ai-sparkle--6" />
+            </div>
+          )}
 
           {active && state === 'PROCESSING' && (
             <div

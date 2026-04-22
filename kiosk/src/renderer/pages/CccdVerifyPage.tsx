@@ -125,34 +125,6 @@ export default function CccdVerifyPage() {
         <h2 className="face-section-title">XÁC THỰC KHUÔN MẶT</h2>
 
         <div className="cccd-card-body">
-          <div className="cccd-info-side">
-            <div className="cccd-info-layout">
-              <div className="cccd-photo">
-                <img src={user.photoSrc} alt={user.hoTen} className="cccd-photo-img" />
-              </div>
-              <div className="cccd-info-grid">
-                {rows.map((row) => (
-                  <div key={row.label} className="cccd-info-row">
-                    <span className="cccd-info-label">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      >
-                        {row.iconPath}
-                      </svg>
-                      {row.label}
-                    </span>
-                    <span className="cccd-info-value">{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
           <div className="cccd-ekyc-side">
             <div className="ekyc-frame">
               <div className="ekyc-video-layer">
@@ -182,6 +154,34 @@ export default function CccdVerifyPage() {
             </div>
             <p className="ekyc-hint">Vui lòng di chuyển khuôn mặt vào khung để xác thực</p>
           </div>
+
+          <div className="cccd-info-side">
+            <div className="cccd-info-layout">
+              <div className="cccd-photo">
+                <img src={user.photoSrc} alt={user.hoTen} className="cccd-photo-img" />
+              </div>
+              <div className="cccd-info-grid">
+                {rows.map((row) => (
+                  <div key={row.label} className="cccd-info-row">
+                    <span className="cccd-info-label">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        {row.iconPath}
+                      </svg>
+                      {row.label}
+                    </span>
+                    <span className="cccd-info-value">{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -207,9 +207,6 @@ export default function CccdVerifyPage() {
         </div>
       </div>
 
-      <p className="cccd-hotline">
-        Tổng đài hỗ trợ: <strong>18001096</strong>
-      </p>
     </div>
   );
 }

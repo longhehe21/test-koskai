@@ -305,6 +305,7 @@ export function NguoiLuuTruModal({ open, onClose, onSave }: NguoiLuuTruModalProp
       overlayClassName="tnlt-overlay"
       visibleClassName="tnlt-overlay--visible"
       onClose={onClose}
+      portalSelector=".kiosk-content-panel"
     >
       <div className="tnlt-modal" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="tnlt-close" onClick={onClose} aria-label="Đóng">

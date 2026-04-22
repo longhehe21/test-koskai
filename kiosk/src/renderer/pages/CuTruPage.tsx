@@ -149,6 +149,25 @@ export default function CuTruPage() {
             </div>
           ))}
         </div>
+
+        <div className="cutru-footer">
+          <button
+            className="cutru-btn cutru-btn--back"
+            onClick={() => window.history.back()}
+            aria-label="Quay lại"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M11 4L6 9l5 5"
+                stroke="#374151"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Quay lại
+          </button>
+        </div>
       </div>
 
       <LuuTruHoSoModal

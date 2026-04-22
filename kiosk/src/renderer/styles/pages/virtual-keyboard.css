@@ -193,11 +193,33 @@
   background: #1d4ed8;
 }
 
-/* Space bar */
+/* Language toggle — globe icon + VI/EN label */
+.vk-key-lang {
+  gap: 6px;
+  min-width: 72px;
+  padding: 0 12px;
+}
+
+.vk-key-lang-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.vk-key-lang.vk-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.vk-key-lang.vk-active:hover {
+  background: #1d4ed8;
+}
+
+/* Space bar — co nhỏ lại cho cân với row (trước bị flex:1 kéo giãn lên đến 400px) */
 .vk-key-space {
-  flex: 1;
-  max-width: 340px;
-  min-width: 180px;
+  flex: 0 0 auto;
+  width: 220px;
   font-size: 11px;
   color: #9ca3af;
   letter-spacing: 1px;
@@ -269,7 +291,7 @@
   }
 
   .vk-key-space {
-    max-width: 400px;
+    width: 260px;
   }
 
   .vk-key-backspace,

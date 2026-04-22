@@ -1,0 +1,107 @@
+/* ===== UnsavedChangesModal — cảnh báo rời form chưa lưu ===== */
+
+.ucm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  padding: 24px;
+}
+
+.ucm-overlay--visible {
+  opacity: 1;
+}
+
+.ucm-modal {
+  width: 100%;
+  max-width: 400px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  transform: translateY(8px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ucm-overlay--visible .ucm-modal {
+  transform: translateY(0) scale(1);
+}
+
+.ucm-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.ucm-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.ucm-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+
+.ucm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ucm-btn {
+  width: 100%;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.ucm-btn--primary {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #ffffff;
+}
+
+.ucm-btn--primary:hover {
+  background: #1d4ed8;
+}
+
+.ucm-btn--outline {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.ucm-btn--outline:hover {
+  background: #f1f5f9;
+}
+
+.ucm-btn--danger {
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.ucm-btn--danger:hover {
+  background: #fef2f2;
+}
+
+.ucm-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}

@@ -27,6 +27,7 @@ export default defineConfig({
         '@styles': resolve('src/renderer/styles'),
         '@assets': resolve('public/assets'),
         '@hooks': resolve('src/renderer/hooks'),
+        '@utils': resolve('src/renderer/utils'),
       },
     },
   },

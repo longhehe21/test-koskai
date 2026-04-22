@@ -32,6 +32,7 @@ export function LuuTruHoSoModal({
         overlayClassName="ltrhsm-overlay"
         visibleClassName="ltrhsm-overlay--visible"
         onClose={onDismiss}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="ltrhsm-modal" onClick={(e) => e.stopPropagation()}>
           <div className="ltrhs-area">
@@ -130,6 +131,7 @@ export function LuuTruHoSoModal({
         overlayClassName="maudon-overlay"
         visibleClassName="maudon-overlay--visible"
         onClose={() => setShowPreview(false)}
+        portalSelector=".kiosk-content-panel"
       >
         <div className="maudon-container" onClick={(e) => e.stopPropagation()}>
           <button

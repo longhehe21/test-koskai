@@ -2,6 +2,8 @@ import '@styles/pages/virtual-keyboard.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { processTelex } from '@renderer/utils/telex';
+import { subscribeHideVirtualKeyboard } from '@utils/keyboardControl';
+import { sound } from '@services/soundService';
 
 type InputEl = HTMLInputElement | HTMLTextAreaElement;
 
@@ -75,20 +77,33 @@ function findScrollParent(el: HTMLElement): HTMLElement {
 export function VirtualKeyboard() {
   const [activeInput, setActiveInput] = useState<InputEl | null>(null);
   const [isShift, setIsShift] = useState(false);
+  // isEnglish=true → skip Telex processing, nhập trực tiếp (cho email, URL,
+  // tên tiếng Anh). Mặc định false (tiếng Việt + Telex).
+  const [isEnglish, setIsEnglish] = useState(false);
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState<{ left?: string; top?: string; bottom?: string }>({
     left: '50%',
     bottom: '60px',
   });
   const [dragging, setDragging] = useState(false);
+  // Key được press — trigger .vk-key-pop animation, tự clear sau 150ms.
+  const [poppedKey, setPoppedKey] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const activeInputRef = useRef<InputEl | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const popTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     activeInputRef.current = activeInput;
   }, [activeInput]);
+
+  // Pop visual effect khi bấm phím — key sáng xanh 150ms rồi tắt.
+  const triggerPop = useCallback((keyId: string) => {
+    setPoppedKey(keyId);
+    if (popTimerRef.current !== null) window.clearTimeout(popTimerRef.current);
+    popTimerRef.current = window.setTimeout(() => setPoppedKey(null), 150);
+  }, []);
 
   // Global focusin listener → detect active input
   useEffect(() => {
@@ -153,10 +168,16 @@ export function VirtualKeyboard() {
     setIsShift(false);
   }, []);
 
+  // Subscribe external hide signal — IdleWarningModal / full-screen modals
+  // gọi hideVirtualKeyboard() khi hiện lên để keyboard không che UI quan trọng.
+  useEffect(() => subscribeHideVirtualKeyboard(hideKeyboard), [hideKeyboard]);
+
   const handleKeyPress = useCallback(
     (key: string) => {
       const input = activeInputRef.current;
       if (!input) return;
+      sound.tick();
+      triggerPop(key);
       const start = input.selectionStart ?? input.value.length;
       const end = input.selectionEnd ?? input.value.length;
 
@@ -167,8 +188,10 @@ export function VirtualKeyboard() {
         cursorPos = start;
       }
 
-      const telexResult = processTelex(text, cursorPos, key);
-      if (telexResult.consumed) {
+      // Telex chỉ chạy ở chế độ tiếng Việt — English mode nhập trực tiếp
+      // (cho email/URL/tên tiếng Anh nơi Telex gây phiền toái).
+      const telexResult = isEnglish ? null : processTelex(text, cursorPos, key);
+      if (telexResult?.consumed) {
         setNativeInputValue(input, telexResult.text);
         input.setSelectionRange(telexResult.cursorPos, telexResult.cursorPos);
       } else {
@@ -183,12 +206,14 @@ export function VirtualKeyboard() {
         setIsShift(false);
       }
     },
-    [],
+    [triggerPop, isEnglish],
   );
 
   const handleBackspace = useCallback(() => {
     const input = activeInputRef.current;
     if (!input) return;
+    sound.tick();
+    triggerPop('__backspace__');
     const start = input.selectionStart ?? input.value.length;
     const end = input.selectionEnd ?? input.value.length;
 
@@ -199,20 +224,52 @@ export function VirtualKeyboard() {
       setNativeInputValue(input, input.value.slice(0, start - 1) + input.value.slice(start));
       input.setSelectionRange(start - 1, start - 1);
     }
-  }, []);
+  }, [triggerPop]);
 
   const handleEnter = useCallback(() => {
     const input = activeInputRef.current;
     if (!input) return;
-    if (input instanceof HTMLTextAreaElement) {
-      const start = input.selectionStart ?? input.value.length;
-      setNativeInputValue(input, `${input.value.slice(0, start)}\n${input.value.slice(start)}`);
-      input.setSelectionRange(start + 1, start + 1);
-    } else {
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
-      input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', bubbles: true }));
+    sound.tick();
+    triggerPop('__enter__');
+
+    // Tab navigation: tìm input/textarea tiếp theo visible & enabled trong DOM
+    // rồi focus. Kiosk form dài → Enter chuyển ô nhanh hơn bắt user bấm Tab.
+    const allFields = Array.from(
+      document.querySelectorAll<InputEl>('input, textarea'),
+    ).filter((el) => {
+      if (el.disabled || el.readOnly) return false;
+      if (el instanceof HTMLInputElement && !ALLOWED_INPUT_TYPES.has(el.type.toLowerCase())) {
+        return false;
+      }
+      // Skip element ẩn (display:none ancestor → offsetParent null trừ fixed).
+      if (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return false;
+      return true;
+    });
+
+    const idx = allFields.indexOf(input);
+    if (idx === -1 || idx === allFields.length - 1) {
+      // Cuối danh sách hoặc không tìm thấy → blur + ẩn bàn phím.
+      input.blur();
+      return;
     }
-  }, []);
+
+    const next = allFields[idx + 1];
+    next.focus();
+    // Scroll vào view để user thấy ô đang được chọn.
+    next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [triggerPop]);
+
+  const handleShiftToggle = useCallback(() => {
+    sound.tick();
+    triggerPop('__shift__');
+    setIsShift((v) => !v);
+  }, [triggerPop]);
+
+  const handleLangToggle = useCallback(() => {
+    sound.tick();
+    triggerPop('__lang__');
+    setIsEnglish((v) => !v);
+  }, [triggerPop]);
 
   const handleDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
@@ -247,10 +304,13 @@ export function VirtualKeyboard() {
 
   const rows = isShift ? ROWS_UPPER : ROWS_LOWER;
 
+  // Quan trọng: phải force 'auto' cho bên không dùng (top hoặc bottom) để
+  // override CSS default `.vk-container { bottom: 60px }`. Nếu chỉ set `top`
+  // mà không set `bottom: auto`, container sẽ có cả 2 → stretch toàn chiều cao.
   const containerStyle: React.CSSProperties = {
     left: pos.left,
-    top: pos.top,
-    bottom: pos.bottom,
+    top: pos.top ?? 'auto',
+    bottom: pos.bottom ?? 'auto',
     transform: pos.top ? 'translateX(-50%)' : 'translateX(-50%) translateY(0)',
     transition: dragging ? 'none' : undefined,
   };
@@ -298,11 +358,11 @@ export function VirtualKeyboard() {
           <div key={rowIdx} className={`vk-row${rowIdx === 0 ? ' vk-row-numbers' : ''}`}>
             {rowIdx === 3 && (
               <button
-                className={`vk-key vk-key-special vk-key-shift${isShift ? ' vk-active' : ''}`}
+                className={`vk-key vk-key-special vk-key-shift${isShift ? ' vk-active' : ''}${poppedKey === '__shift__' ? ' vk-key-pop' : ''}`}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setIsShift((v) => !v);
+                  handleShiftToggle();
                 }}
                 aria-label="Shift"
               >
@@ -314,7 +374,7 @@ export function VirtualKeyboard() {
             {row.map((keyChar) => (
               <button
                 key={keyChar}
-                className="vk-key"
+                className={`vk-key${poppedKey === keyChar ? ' vk-key-pop' : ''}`}
                 data-key={keyChar}
                 onPointerDown={(e) => {
                   e.preventDefault();
@@ -327,7 +387,7 @@ export function VirtualKeyboard() {
             ))}
             {rowIdx === 0 && (
               <button
-                className="vk-key vk-key-special vk-key-backspace"
+                className={`vk-key vk-key-special vk-key-backspace${poppedKey === '__backspace__' ? ' vk-key-pop' : ''}`}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -347,7 +407,23 @@ export function VirtualKeyboard() {
 
         <div className="vk-row">
           <button
-            className="vk-key"
+            className={`vk-key vk-key-special vk-key-lang${isEnglish ? ' vk-active' : ''}${poppedKey === '__lang__' ? ' vk-key-pop' : ''}`}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLangToggle();
+            }}
+            aria-label={isEnglish ? 'Chuyển sang tiếng Việt' : 'Chuyển sang tiếng Anh'}
+            title={isEnglish ? 'Tiếng Anh (English)' : 'Tiếng Việt (Telex)'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span className="vk-key-lang-label">{isEnglish ? 'EN' : 'VI'}</span>
+          </button>
+          <button
+            className={`vk-key${poppedKey === ',' ? ' vk-key-pop' : ''}`}
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -357,7 +433,7 @@ export function VirtualKeyboard() {
             ,
           </button>
           <button
-            className="vk-key vk-key-space"
+            className={`vk-key vk-key-space${poppedKey === ' ' ? ' vk-key-pop' : ''}`}
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -367,7 +443,7 @@ export function VirtualKeyboard() {
             khoảng trắng
           </button>
           <button
-            className="vk-key"
+            className={`vk-key${poppedKey === '.' ? ' vk-key-pop' : ''}`}
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -377,7 +453,7 @@ export function VirtualKeyboard() {
             .
           </button>
           <button
-            className="vk-key vk-key-special vk-key-enter"
+            className={`vk-key vk-key-special vk-key-enter${poppedKey === '__enter__' ? ' vk-key-pop' : ''}`}
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
