@@ -4,7 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useHoKhauFlowStore } from '@store/hoKhauFlowStore';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { useScanStore } from '@store/scanStore';
 import { sound } from '@services/soundService';
+import { hydrateScansFromServer } from '@services/applicationService';
 import {
   CT01_BACK_BODY,
   CT01_BODY,
@@ -30,6 +32,8 @@ interface PreviewConfig {
   pageTitle: string;
   nextRoute: string;
   docBodyHTML: string;
+  /** URL .docx trong /public/assets — nếu có, render bằng mammoth thay cho HTML hardcode */
+  docxUrl?: string;
 }
 
 const CT02_BRANCHES = new Set([
@@ -301,6 +305,7 @@ function buildHoKhauCfg(): PreviewConfig {
   return {
     docImage: pages[0]?.image ?? frontImage,
     docBodyHTML: isNuocNgoai ? CT02_BODY : CT01_BODY,
+    docxUrl: isNuocNgoai ? undefined : '/assets/ct01-to-khai.docx',
     filename: isNuocNgoai ? 'MauCT02.docx' : 'MauCT01.docx',
     pageTitle: 'Xem trước hồ sơ – Hộ khẩu',
     nextRoute: '/tao-ho-so-thuong-tru',
@@ -327,6 +332,86 @@ export default function XemTruocHoSoPage() {
 
   usePageHeader({ title: cfg.pageTitle });
 
+  // Override ảnh mock bằng ảnh thật user đã scan (lưu trong scanStore).
+  // User tự chụp N ảnh → list dynamic, không giới hạn số trang cfg.pages gốc.
+  const flowKey = useMemo(() => getFlowKeyFromRoute(location.pathname), [location.pathname]);
+  const allDocs = useScanStore((s) => s.docs);
+
+  // Resume từ "Hồ sơ của tôi": query ?appId=X → fetch application_files từ
+  // server, clear flowKey cũ (tránh trộn scan khác hồ sơ), hydrate scanStore.
+  // Gate render bằng isHydrating để không flash template mocks.
+  const resumeAppId = useMemo(() => {
+    const id = Number(new URLSearchParams(location.search).get('appId'));
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }, [location.search]);
+  const [isHydrating, setIsHydrating] = useState(!!(resumeAppId && flowKey));
+
+  useEffect(() => {
+    if (!resumeAppId || !flowKey) {
+      setIsHydrating(false);
+      return;
+    }
+    let cancelled = false;
+    setIsHydrating(true);
+    (async () => {
+      try {
+        // Clear flow trước khi hydrate để không trộn ảnh từ session hiện tại
+        // với ảnh của appId đang resume.
+        useScanStore.getState().clearFlow(flowKey);
+        await hydrateScansFromServer(
+          resumeAppId,
+          flowKey,
+          useScanStore.getState().saveDoc,
+        );
+      } catch (err) {
+        console.warn('[XemTruocHoSo] hydrate scans fail:', (err as Error).message);
+      } finally {
+        if (!cancelled) setIsHydrating(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [resumeAppId, flowKey]);
+
+  // Debug log toàn bộ ảnh đã scan của flow hiện tại
+  useEffect(() => {
+    if (!flowKey) return;
+    const prefix = `${flowKey}:`;
+    const scanned = Object.entries(allDocs)
+      .filter(([k]) => k.startsWith(prefix))
+      .map(([k, doc]) => ({
+        key: k.slice(prefix.length),
+        matchCode: doc.matchCode,
+        matchName: doc.matchName,
+        score: doc.matchScore,
+        scannedAt: doc.scannedAt,
+        ocrTextPreview: (doc.ocrText ?? '').slice(0, 100) + ((doc.ocrText ?? '').length > 100 ? '...' : ''),
+      }));
+    console.group(`%c[XemTruoc] ${flowKey} — ${scanned.length} ảnh đã scan`, 'color:#16a34a;font-weight:700');
+    console.table(scanned);
+    console.groupEnd();
+  }, [flowKey, allDocs]);
+  const effectivePages = useMemo(() => {
+    if (!flowKey) return cfg.pages;
+    const prefix = `${flowKey}:`;
+    const sorted = Object.entries(allDocs)
+      .filter(([k]) => k.startsWith(prefix))
+      .map(([, doc]) => doc)
+      .sort((a, b) => a.scannedAt.localeCompare(b.scannedAt));
+
+    // Nếu user đã scan → dùng đúng số ảnh user scan (override cfg.pages cứng)
+    if (sorted.length > 0) {
+      return sorted.map((doc, i) => {
+        const basePage = cfg.pages[i] ?? cfg.pages[cfg.pages.length - 1];
+        return {
+          ...basePage,
+          label: `Trang ${String(i + 1).padStart(2, '0')} - ${doc.matchName}`,
+          image: doc.dataUrl,
+        };
+      });
+    }
+    return cfg.pages;
+  }, [cfg.pages, allDocs, flowKey]);
+
   const [activeIdx, setActiveIdx] = useState(0);
   // Progress OCR — 0..100 sync với reveal animation, hiện box "TIẾN ĐỘ X%"
   // bên dưới + vòng ring. Done=true khi verify đã xong → vòng ring → tick.
@@ -339,9 +424,59 @@ export default function XemTruocHoSoPage() {
     setActiveIdx(0);
   }, [cfg]);
 
-  const activePage = cfg.pages[activeIdx] ?? cfg.pages[0];
-  const mode = activePage.ocrHTML ? 'ocr' : 'docx';
-  const docBodyHTML = activePage.docBodyHTML ?? cfg.docBodyHTML;
+  const activePage = effectivePages[activeIdx] ?? effectivePages[0];
+  // Cố định docx mode — bên phải luôn hiện mẫu doc của thủ tục, không đổi theo page click.
+  const mode = 'docx' as const;
+
+  // Load .docx thật bằng docx-preview (render chính xác table/style như Word).
+  // Fallback HTML hardcode nếu cfg không có docxUrl hoặc load fail.
+  const docxContainerRef = useRef<HTMLDivElement>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
+  const [docxRendered, setDocxRendered] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDocxRendered(false);
+    setDocxError(null);
+
+    const container = docxContainerRef.current;
+    if (!cfg.docxUrl || !container) return;
+
+    setDocxLoading(true);
+    container.innerHTML = '';
+
+    (async () => {
+      try {
+        const res = await fetch(cfg.docxUrl!);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const { renderAsync } = await import('docx-preview');
+        if (cancelled) return;
+        await renderAsync(blob, container, undefined, {
+          inWrapper: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          ignoreFonts: false,
+          breakPages: true,
+          experimental: true,
+          className: 'xths-docx-rendered',
+        });
+        if (!cancelled) setDocxRendered(true);
+      } catch (err) {
+        console.warn('[XemTruocHoSo] load docx fail:', (err as Error).message);
+        if (!cancelled) setDocxError((err as Error).message);
+      } finally {
+        if (!cancelled) setDocxLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [cfg.docxUrl]);
+
+  // Fallback HTML khi không có docxUrl
+  const useFallback = !cfg.docxUrl || !!docxError;
+  const docBodyHTML = cfg.docBodyHTML;
 
   // Scan beam + OCR sequential reveal + progress % + sound. Reset mỗi lần
   // đổi page/mode. Progress counter chạy RAF loop liên tục trong suốt sequence,
@@ -429,15 +564,34 @@ export default function XemTruocHoSoPage() {
   }, [mode, activeIdx]);
 
   const handleNext = () => {
-    if (activeIdx < cfg.pages.length - 1) {
+    if (activeIdx < effectivePages.length - 1) {
       setActiveIdx(activeIdx + 1);
       return;
     }
     navigate(cfg.nextRoute);
   };
 
+  // Render overlay loading thay vì early return — tránh unmount refs (docxContainerRef)
+  // làm useEffect load docx không re-run khi isHydrating flip false.
   return (
     <div className="xths-area">
+      {isHydrating && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(255,255,255,0.85)',
+            zIndex: 100,
+            color: '#6b7280',
+            fontSize: 16,
+          }}
+        >
+          Đang tải tài liệu đã lưu...
+        </div>
+      )}
       <div className="xths-body">
         <div className="xths-left">
           <div className="xths-scan-preview">
@@ -453,7 +607,7 @@ export default function XemTruocHoSoPage() {
             </div>
           </div>
           <div className="xths-thumbs">
-            {cfg.pages.map((p, i) => (
+            {effectivePages.map((p, i) => (
               <div
                 key={i}
                 className={`xths-thumb${activeIdx === i ? ' xths-thumb--active' : ''}`}
@@ -476,10 +630,24 @@ export default function XemTruocHoSoPage() {
           </div>
           {mode === 'docx' ? (
             <div className="xths-docx-scroll">
+              {docxLoading && (
+                <div style={{ padding: 16, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+                  Đang tải mẫu docx...
+                </div>
+              )}
+              {/* Container cho docx-preview — render trực tiếp DOM vào đây */}
               <div
+                ref={docxContainerRef}
                 className="xths-docx-paper"
-                dangerouslySetInnerHTML={{ __html: docBodyHTML }}
+                style={{ display: useFallback && !docxRendered ? 'none' : 'block' }}
               />
+              {/* Fallback HTML hardcode khi không load được docx */}
+              {useFallback && (
+                <div
+                  className="xths-docx-paper"
+                  dangerouslySetInnerHTML={{ __html: docBodyHTML }}
+                />
+              )}
             </div>
           ) : (
             <>
@@ -556,4 +724,23 @@ export default function XemTruocHoSoPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * Map route xem-truoc → flowKey trong scanStore.
+ * Phải khớp với logic trong ScanTaiLieuPage (cùng key để pull ảnh đã scan).
+ */
+function getFlowKeyFromRoute(pathname: string): string | null {
+  if (pathname === '/xem-truoc-ho-khau') return 'thuong-tru';
+  if (pathname === '/xem-truoc-tam-vang') return 'tam-vang';
+  if (pathname === '/xem-truoc-luu-tru') return 'luu-tru';
+  if (pathname === '/xem-truoc-tam-tru') return 'tam-tru:thuoc-so-huu';
+  if (pathname === '/xem-truoc-tam-tru-ct01') return 'tam-tru:khong-thuoc-so-huu';
+  if (pathname === '/xem-truoc-tam-tru-quan-doi') return 'tam-tru:quan-doi-cong-an';
+  if (pathname === '/xem-truoc-tam-tru-phuong-tien') return 'tam-tru:phuong-tien';
+  if (pathname === '/xem-truoc-tam-tru-thue-muon') return 'tam-tru:thue-muon-o-nho';
+  if (pathname === '/xem-truoc-gia-han') return 'gia-han:gia-han-ca-nhan';
+  if (pathname === '/xem-truoc-gia-han-danh-sach') return 'gia-han:gia-han-danh-sach';
+  if (pathname === '/xem-truoc-xoa-dang-ky') return 'xoa-dang-ky:xoa-dang-ky';
+  return null;
 }

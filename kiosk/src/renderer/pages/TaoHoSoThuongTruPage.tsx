@@ -1,8 +1,19 @@
 import '@styles/pages/tao-ho-so-thuong-tru.css';
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
+import { useScanStore } from '@store/scanStore';
+import { useDraftFormStore } from '@store/draftFormStore';
+import { parseCt01Ocr } from '@utils/parseCt01Ocr';
+import { findProvinceForWard } from '@utils/wardToProvinceMap';
+import {
+  createOrUpdateDraft,
+  getApplication,
+  hydrateScansFromServer,
+  submitApplication,
+} from '@services/applicationService';
+import { useScanUpload } from '@hooks/useScanUpload';
 import {
   ConfirmSubmitModal,
   Dropdown,
@@ -56,53 +67,216 @@ const emptyXinYKien = (id: number): XinYKienRow => ({
   vaiTro: null,
 });
 
+const PROCEDURE_CODE = 'thuong-tru';
+
+/**
+ * Parse ?appId=123 từ URL. Null nếu không hợp lệ.
+ * Hoisted ra ngoài để wrapper + inner form chia sẻ (DRY).
+ */
+function parseResumeAppId(search: string): number | null {
+  const id = Number(new URLSearchParams(search).get('appId'));
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/**
+ * Wrapper: gate render đến khi resume-data load xong.
+ *
+ * Why: 20+ useState ở inner form init 1 LẦN tại mount. Nếu setForm(store) từ
+ * API chạy SAU khi useState đã init (vì async) → local state vẫn trống dù
+ * store có data → "nhấn sửa thì giống như mới".
+ *
+ * Fix: inner form chỉ mount SAU khi store đã được hydrate từ server. Dùng key
+ * theo appId để force remount khi user click resume cho hồ sơ khác.
+ */
 export default function TaoHoSoThuongTruPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const resumeAppId = useMemo(() => parseResumeAppId(location.search), [location.search]);
+
+  // Nếu không có resumeAppId → ready ngay (đọc sessionStorage cache nếu có)
+  const [ready, setReady] = useState(!resumeAppId);
+  const [loadedAppId, setLoadedAppId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!resumeAppId) {
+      setReady(true);
+      setLoadedAppId(null);
+      return;
+    }
+    let cancelled = false;
+    setReady(false);
+    (async () => {
+      try {
+        const detail = await getApplication(resumeAppId);
+        if (cancelled) return;
+        // Chặn edit hồ sơ đã nộp: server cũng block PATCH, nhưng FE redirect
+        // sớm để UX rõ (hiện list thay vì form read-only dễ nhầm).
+        if (detail.submittedAt) {
+          navigate('/ho-so-cua-toi', { replace: true });
+          return;
+        }
+        if (detail.formDataJson) {
+          useDraftFormStore.getState().setForm(PROCEDURE_CODE, detail.formDataJson);
+        }
+        useDraftFormStore.getState().setAppId(PROCEDURE_CODE, detail.id);
+        // Hydrate scanStore từ application_files trên server → XemTruocHoSoPage
+        // đọc scanStore thấy ảnh đã lưu lúc lưu nháp trước đó (cross-session).
+        await hydrateScansFromServer(
+          detail.id,
+          PROCEDURE_CODE,
+          useScanStore.getState().saveDoc,
+        );
+        if (cancelled) return;
+        setLoadedAppId(detail.id);
+      } catch (err) {
+        console.warn('[TaoHoSoThuongTru] load draft fail:', (err as Error).message);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [resumeAppId, navigate]);
+
+  if (!ready) {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        Đang tải hồ sơ nháp...
+      </div>
+    );
+  }
+
+  // key: force remount khi chuyển từ fresh ↔ resume hồ sơ khác nhau
+  return <TaoHoSoThuongTruForm key={loadedAppId ?? 'fresh'} />;
+}
+
+function TaoHoSoThuongTruForm() {
   const navigate = useNavigate();
   const isVK = useMemo(() => isVietKieuBranch(), []);
 
+  const setAppId = useDraftFormStore((s) => s.setAppId);
+  const getAppId = useDraftFormStore((s) => s.getAppId);
+  const setForm = useDraftFormStore((s) => s.setForm);
+  const getForm = useDraftFormStore((s) => s.getForm);
+  // Snapshot cachedForm tại mount — dùng cho useState inits. Wrapper đã đảm
+  // bảo store có data TRƯỚC khi inner form mount (resume) hoặc có cache cũ
+  // từ sessionStorage (navigate-back). Re-render sau đó KHÔNG re-init state.
+  const cachedForm = useMemo(
+    () => (useDraftFormStore.getState().forms[PROCEDURE_CODE] ?? {}) as Record<string, unknown>,
+    [],
+  );
+  const c1 = (cachedForm.section1 ?? {}) as Record<string, unknown>;
+  const c2 = (cachedForm.section2 ?? {}) as Record<string, unknown>;
+  const c4 = (cachedForm.section4 ?? {}) as Record<string, unknown>;
+  const c5 = (cachedForm.section5 ?? {}) as Record<string, unknown>;
+  const c6 = (cachedForm.section6 ?? {}) as Record<string, unknown>;
+  const c7 = (cachedForm.section7 ?? {}) as Record<string, unknown>;
+
   usePageHeader({ title: 'Hồ sơ đăng ký thường trú' });
 
-  // Section I
-  const [s1Province, setS1Province] = useState<DropdownItem | null>(null);
-  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(null);
-  const [s1CoQuan, setS1CoQuan] = useState<DropdownItem | null>(COQUAN_ITEMS[0]);
-  const [s1Sdt, setS1Sdt] = useState('');
+  // Parse OCR CT01 user đã scan — extract đủ các trường để auto-fill form
+  const allDocs = useScanStore((s) => s.docs);
+  const ct01OcrText = useMemo(() => {
+    const prefix = 'thuong-tru:';
+    for (const [k, doc] of Object.entries(allDocs)) {
+      if (k.startsWith(prefix)
+        && doc.matchCode === 'ct01-to-khai-thay-doi-thong-tin-cu-tru'
+        && doc.ocrText) {
+        return doc.ocrText;
+      }
+    }
+    return null;
+  }, [allDocs]);
+  const ocrFields = useMemo(
+    () => (ct01OcrText ? parseCt01Ocr(ct01OcrText) : null),
+    [ct01OcrText],
+  );
+  const defaultWardName = ocrFields?.ward ?? 'Phường Ba Đình';
+  const defaultProvinceName = ocrFields?.ward
+    ? findProvinceForWard(ocrFields.ward)
+    : 'Thành phố Hà Nội';
+
+  // Debug log các field đã parse được từ OCR
+  useEffect(() => {
+    if (!ocrFields) return;
+    console.group('%c[TaoHoSoThuongTru] OCR fields parsed', 'color:#f59e0b;font-weight:700');
+    console.table(ocrFields);
+    console.log('defaultProvinceName:', defaultProvinceName);
+    console.log('defaultWardName:', defaultWardName);
+    console.groupEnd();
+  }, [ocrFields, defaultProvinceName, defaultWardName]);
+
+  // Section I — ưu tiên cached draft (resume/session) > default
+  const [s1Province, setS1Province] = useState<DropdownItem | null>(
+    (c1.province as DropdownItem | null) ?? null,
+  );
+  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(
+    (c1.ward as DropdownItem | null) ?? null,
+  );
+  const [s1CoQuan, setS1CoQuan] = useState<DropdownItem | null>(
+    (c1.coquan as DropdownItem | null) ?? COQUAN_ITEMS[0],
+  );
+  const [s1Sdt, setS1Sdt] = useState((c1.sdt as string) ?? '');
 
   // Section II
-  const [hoSoMoi, setHoSoMoi] = useState<HoSoMoi>('lap-ho-moi');
-  const [vkCheckbox, setVkCheckbox] = useState(isVK);
+  const [hoSoMoi, setHoSoMoi] = useState<HoSoMoi>(
+    (c2.hoSoMoi as HoSoMoi) ?? 'lap-ho-moi',
+  );
   const defaultTruongHop = isVK
     ? TRUONG_HOP_ITEMS.find((t) => t.code === 'nhan-khau') ?? null
     : null;
-  const [truongHop, setTruongHop] = useState<DropdownItem | null>(defaultTruongHop);
+  const [truongHop, setTruongHop] = useState<DropdownItem | null>(
+    (c2.truongHop as DropdownItem | null) ?? defaultTruongHop,
+  );
 
-  // Section IV
-  const [s4Province, setS4Province] = useState<DropdownItem | null>(null);
-  const [s4Ward, setS4Ward] = useState<DropdownItem | null>(null);
-  const [s4DiaChi, setS4DiaChi] = useState('');
-  const [chuHoHoTen, setChuHoHoTen] = useState('');
-  const [chuHoQuanHe, setChuHoQuanHe] = useState('');
-  const [chuHoCccd, setChuHoCccd] = useState('');
-  const [noiDung, setNoiDung] = useState('');
+  // Section IV — ưu tiên cached > OCR > default
+  const [s4Province, setS4Province] = useState<DropdownItem | null>(
+    (c4.province as DropdownItem | null) ?? null,
+  );
+  const [s4Ward, setS4Ward] = useState<DropdownItem | null>(
+    (c4.ward as DropdownItem | null) ?? null,
+  );
+  const [s4DiaChi, setS4DiaChi] = useState((c4.diaChi as string) ?? '');
+  const [chuHoHoTen, setChuHoHoTen] = useState(
+    (c4.chuHoHoTen as string) ?? ocrFields?.hoTenChuHo ?? '',
+  );
+  const [chuHoQuanHe, setChuHoQuanHe] = useState(
+    (c4.chuHoQuanHe as string) ?? ocrFields?.mqhChuHo ?? '',
+  );
+  const [chuHoCccd, setChuHoCccd] = useState((c4.chuHoCccd as string) ?? '');
+  const [noiDung, setNoiDung] = useState(
+    (c4.noiDung as string) ?? ocrFields?.noiDungDeNghi ?? '',
+  );
 
   // Section V
-  const [nguoiKeKhai, setNguoiKeKhai] = useState<NguoiKeKhai | null>(null);
-  const [xinYKien, setXinYKien] = useState<XinYKienRow[]>([emptyXinYKien(1)]);
-  const [xinYKienNext, setXinYKienNext] = useState(2);
+  const [nguoiKeKhai, setNguoiKeKhai] = useState<NguoiKeKhai | null>(
+    (c5.nguoiKeKhai as NguoiKeKhai | null) ?? null,
+  );
+  const initialXinYKien = (c5.xinYKien as XinYKienRow[] | undefined) ?? [emptyXinYKien(1)];
+  const [xinYKien, setXinYKien] = useState<XinYKienRow[]>(initialXinYKien);
+  const [xinYKienNext, setXinYKienNext] = useState(
+    initialXinYKien.length > 0 ? Math.max(...initialXinYKien.map((r) => r.id)) + 1 : 2,
+  );
 
   // Section VI
-  const [s6ThongBao, setS6ThongBao] = useState<string[]>(['cong-tt']);
-  const [s6KetQua, setS6KetQua] = useState<DropdownItem | null>(KET_QUA_OPTIONS[0]);
-  const [s6Email, setS6Email] = useState('');
+  const [s6ThongBao, setS6ThongBao] = useState<string[]>(
+    (c6.thongBao as string[]) ?? ['cong-tt'],
+  );
+  const [s6KetQua, setS6KetQua] = useState<DropdownItem | null>(
+    (c6.ketQua as DropdownItem | null) ?? KET_QUA_OPTIONS[0],
+  );
+  const [s6Email, setS6Email] = useState((c6.email as string) ?? '');
   const showEmail = s6ThongBao.includes('email') || s6KetQua?.code === 'email';
 
   // Section VII
-  const [lePhi, setLePhi] = useState<LePhi>('co-phi');
-  const [lyDoMienPhi, setLyDoMienPhi] = useState<DropdownItem | null>(null);
+  const [lePhi, setLePhi] = useState<LePhi>((c7.lePhi as LePhi) ?? 'co-phi');
+  const [lyDoMienPhi, setLyDoMienPhi] = useState<DropdownItem | null>(
+    (c7.lyDoMienPhi as DropdownItem | null) ?? null,
+  );
 
   // Commit
-  const [committed, setCommitted] = useState(false);
+  const [committed, setCommitted] = useState((cachedForm.committed as boolean) ?? false);
   const [showDraft, setShowDraft] = useState(false);
+  const [draftTrackingCode, setDraftTrackingCode] = useState<string | null>(null);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
   // Dirty tracking: true khi user focus vào field bất kỳ lần đầu.
@@ -131,15 +305,140 @@ export default function TaoHoSoThuongTruPage() {
     setS1CoQuan({ code: `coquan-${item.code}`, name: `Công an ${item.name}` });
   };
 
+  /**
+   * Collect toàn bộ state (parent-owned + Section3 mirror từ draftFormStore) → object JSON
+   * để gửi lên server lưu nháp.
+   *
+   * Section III tự mirror state vào draftFormStore (xem Section3VN.tsx useEffect).
+   * Đọc FRESH section3 từ store (không dùng cachedForm memoized) để bắt kịp
+   * Section3 edits mới nhất trước khi save.
+   */
+  const buildFormData = (): Record<string, unknown> => {
+    const liveForm = (getForm(PROCEDURE_CODE) ?? {}) as { section3?: Record<string, unknown> };
+    return {
+      section1: {
+        province: s1Province,
+        ward: s1Ward,
+        coquan: s1CoQuan,
+        sdt: s1Sdt,
+      },
+      section2: {
+        hoSoMoi,
+        truongHop,
+      },
+      section3: liveForm.section3 ?? {},
+      section4: {
+        province: s4Province,
+        ward: s4Ward,
+        diaChi: s4DiaChi,
+        chuHoHoTen,
+        chuHoQuanHe,
+        chuHoCccd,
+        noiDung,
+      },
+      section5: {
+        nguoiKeKhai,
+        xinYKien,
+      },
+      section6: {
+        thongBao: s6ThongBao,
+        ketQua: s6KetQua,
+        email: s6Email,
+      },
+      section7: {
+        lePhi,
+        lyDoMienPhi,
+      },
+      committed,
+    };
+  };
+
+  // Hook upload ảnh scan lên MinIO (encrypt per-citizen key).
+  const { upload: uploadScan } = useScanUpload();
+
+  /**
+   * Upload các ảnh scan chưa synced của procedure này. Gọi SAU khi có appId.
+   * Skip docs có fileId (đã upload) → idempotent khi user save nhiều lần.
+   * Lỗi từng file không block save formData — log warning, user vẫn lưu được
+   * formData, nút "Lưu nháp" bấm lại sẽ retry.
+   */
+  const uploadPendingScans = async (appId: number): Promise<void> => {
+    const allDocs = useScanStore.getState().docs;
+    const prefix = `${PROCEDURE_CODE}:`;
+    const pending = Object.entries(allDocs).filter(
+      ([k, d]) => k.startsWith(prefix) && !d.fileId && d.uploadState !== 'synced',
+    );
+    await Promise.all(
+      pending.map(async ([key, doc]) => {
+        const docCode = key.slice(prefix.length);
+        try {
+          await uploadScan({
+            flowKey: PROCEDURE_CODE,
+            docCode,
+            applicationId: appId,
+            dataUrl: doc.dataUrl,
+          });
+        } catch (err) {
+          console.warn('[TaoHoSoThuongTru] upload scan fail', docCode, (err as Error).message);
+        }
+      }),
+    );
+  };
+
+  const handleSaveDraft = async () => {
+    try {
+      const formData = buildFormData();
+      setForm(PROCEDURE_CODE, formData);
+      const existingAppId = getAppId(PROCEDURE_CODE);
+      const { appId, trackingCode } = await createOrUpdateDraft(
+        PROCEDURE_CODE,
+        formData,
+        existingAppId,
+      );
+      setAppId(PROCEDURE_CODE, appId);
+      // Upload ảnh scan sau khi có appId. Await để đảm bảo xong rồi mới show
+      // toast "Đã lưu" — user navigate đi thì cũng không mất ảnh. Lỗi từng
+      // file không throw (catch trong uploadPendingScans) → save vẫn success.
+      await uploadPendingScans(appId);
+      setDraftTrackingCode(trackingCode || null);
+      setIsDirty(false);
+      setShowDraft(true);
+    } catch (err) {
+      console.warn('[TaoHoSoThuongTru] save draft fail:', (err as Error).message);
+      setDraftTrackingCode(null);
+      setShowDraft(true);
+    }
+  };
+
   // Bấm "Nộp hồ sơ" → mở modal xác nhận trước. Tránh nộp nhầm.
   const handleSubmit = () => {
     if (!committed) return;
     setShowConfirmSubmit(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowConfirmSubmit(false);
     setIsDirty(false); // Đã nộp → không cần guard khi navigate.
+    try {
+      // Đảm bảo form data + ảnh đã lưu server TRƯỚC khi submit — tránh nộp
+      // dữ liệu cũ nếu user edit sau lần Lưu nháp cuối.
+      const formData = buildFormData();
+      setForm(PROCEDURE_CODE, formData);
+      const existingAppId = getAppId(PROCEDURE_CODE);
+      const { appId } = await createOrUpdateDraft(
+        PROCEDURE_CODE,
+        formData,
+        existingAppId,
+      );
+      setAppId(PROCEDURE_CODE, appId);
+      await uploadPendingScans(appId);
+      // Transition draft → submitted. Sau này BE/list sẽ thấy status 'submitted'.
+      await submitApplication(appId);
+    } catch (err) {
+      console.warn('[TaoHoSoThuongTru] submit fail:', (err as Error).message);
+      // Fallback: vẫn navigate để user không kẹt. Status chưa đổi — user retry
+      // qua "Hồ sơ của tôi".
+    }
     sound.success();
     navigate('/nop-ho-so-thanh-cong');
   };
@@ -167,8 +466,12 @@ export default function TaoHoSoThuongTruPage() {
                   ward={s1Ward}
                   onProvinceChange={setS1Province}
                   onWardChange={handleS1Ward}
-                  defaultProvinceName="Thành phố Hà Nội"
-                  defaultWardName="Phường Ba Đình"
+                  defaultProvinceName={defaultProvinceName}
+                  defaultWardName={defaultWardName}
+                  provinceLabel="Tỉnh/Thành phố"
+                  wardLabel="Xã/Phường/Đặc khu"
+                  provinceRequired
+                  wardRequired
                 />
               </div>
               <div className="tkbtv-row">
@@ -231,17 +534,9 @@ export default function TaoHoSoThuongTruPage() {
                   </div>
                 </div>
                 <div className="tkbtv-field">
-                  <label className="thtt-checkbox thtt-checkbox--inline">
-                    <input
-                      type="checkbox"
-                      checked={vkCheckbox}
-                      onChange={(e) => setVkCheckbox(e.target.checked)}
-                    />
-                    <span className="thtt-checkbox-box" />
-                    <span className="thtt-checkbox-text thtt-checkbox-text--sm">
-                      CD Việt Nam định cư ở nước ngoài không có hộ chiếu Việt Nam còn giá trị sử dụng
-                    </span>
-                  </label>
+                  {/* Bỏ checkbox "CD Việt Nam định cư ở nước ngoài" — đã xác định
+                      qua nguồn gốc ở page trước (HoKhauTruongHop / HoKhauSinhSong).
+                      `isVK` được compute từ branch → truyền vào Section3 tương ứng. */}
                   <label className="tkbtv-label">
                     Trường hợp <span className="tkbtv-req">*</span>
                   </label>
@@ -259,7 +554,9 @@ export default function TaoHoSoThuongTruPage() {
           {/* III — branch-aware */}
           <div className="tkbtv-section">
             <div className="tkbtv-section-header">III. THÔNG TIN NGƯỜI ĐỀ NGHỊ ĐĂNG KÝ THƯỜNG TRÚ</div>
-            <div className="tkbtv-section-body">{isVK ? <Section3VK /> : <Section3VN />}</div>
+            <div className="tkbtv-section-body">
+              {isVK ? <Section3VK ocrFields={ocrFields} /> : <Section3VN ocrFields={ocrFields} />}
+            </div>
           </div>
 
           {/* IV */}
@@ -277,8 +574,13 @@ export default function TaoHoSoThuongTruPage() {
                   ward={s4Ward}
                   onProvinceChange={setS4Province}
                   onWardChange={setS4Ward}
-                  defaultProvinceName="Thành phố Hà Nội"
-                  defaultWardName="Phường Tây Hồ"
+                  defaultProvinceName={defaultProvinceName}
+                  defaultWardName={defaultWardName}
+                  provinceLabel="Tỉnh/Thành phố"
+                  wardLabel="Xã/Phường/Đặc khu"
+                  provinceRequired
+                  wardRequired
+                  disabled={!!ocrFields?.ward}
                 />
               </div>
               <div className="tkbtv-field">
@@ -570,7 +872,7 @@ export default function TaoHoSoThuongTruPage() {
 
         <FormFooter
           onBack={() => guard(() => navigate(-1))}
-          onDraft={() => setShowDraft(true)}
+          onDraft={handleSaveDraft}
           onSubmit={handleSubmit}
           submitEnabled={committed}
         />
@@ -581,6 +883,7 @@ export default function TaoHoSoThuongTruPage() {
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
         onList={() => navigate('/ho-so-cua-toi?status=draft')}
+        trackingCode={draftTrackingCode}
       />
 
       <UnsavedChangesModal
@@ -588,7 +891,7 @@ export default function TaoHoSoThuongTruPage() {
         onClose={cancel}
         onSaveDraft={() => {
           cancel();
-          setShowDraft(true); // Mở flow lưu nháp — user có thể list hoặc tiếp tục.
+          void handleSaveDraft();
         }}
         onDiscard={proceed}
       />
@@ -601,3 +904,4 @@ export default function TaoHoSoThuongTruPage() {
     </>
   );
 }
+

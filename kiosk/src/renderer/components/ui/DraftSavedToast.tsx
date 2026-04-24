@@ -8,6 +8,8 @@ interface DraftSavedToastProps {
   onContinue?: () => void;
   onList?: () => void;
   listLabel?: string;
+  /** Mã hồ sơ tracking — hiển thị để user tra cứu sau */
+  trackingCode?: string | null;
 }
 
 export function DraftSavedToast({
@@ -16,6 +18,7 @@ export function DraftSavedToast({
   onContinue,
   onList,
   listLabel = 'Xem danh sách bản nháp',
+  trackingCode,
 }: DraftSavedToastProps) {
   useModalSound(open);
   const handleContinue = () => {
@@ -50,6 +53,12 @@ export function DraftSavedToast({
           </svg>
         </div>
         <h3 className="dsm-title">Hồ sơ đã được lưu nháp thành công!</h3>
+        {trackingCode && (
+          <div className="dsm-code-box">
+            <span className="dsm-code-label">Mã hồ sơ:</span>
+            <code className="dsm-code-value">{trackingCode}</code>
+          </div>
+        )}
         <p className="dsm-desc">
           Bạn có thể tiếp tục hoàn thiện hồ sơ bất cứ lúc nào trong mục <strong>'Bản nháp'</strong>.
         </p>

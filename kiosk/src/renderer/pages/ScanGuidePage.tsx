@@ -49,7 +49,7 @@ export default function ScanGuidePage() {
         <button className="scan-btn-back" onClick={() => navigate(-1)}>
           Quay lại
         </button>
-        <button className="scan-btn-start" onClick={() => navigate('/cccd-verify')}>
+        <button className="scan-btn-start" onClick={() => navigate('/cccd-input')}>
           Tôi đã hiểu &amp; Bắt đầu quét
           <svg
             width="18"

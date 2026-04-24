@@ -7,6 +7,7 @@ import ScanGuidePage from '@pages/ScanGuidePage';
 // Lazy-load non-entry pages để giảm initial bundle (~20-30%).
 // Login + ScanGuide eager vì user luôn đi qua 2 page này trước.
 const CccdVerifyPage = lazy(() => import('@pages/CccdVerifyPage'));
+const CccdInputPage = lazy(() => import('@pages/CccdInputPage'));
 const VneidLoginPage = lazy(() => import('@pages/VneidLoginPage'));
 const ServicesPage = lazy(() => import('@pages/ServicesPage'));
 const CuTruPage = lazy(() => import('@pages/CuTruPage'));
@@ -53,6 +54,7 @@ export function AppRoutes() {
         <Route index element={<LoginPage />} />
         <Route path="login" element={<Navigate to="/" replace />} />
         <Route path="scan-guide" element={<ScanGuidePage />} />
+        <Route path="cccd-input" element={withSuspense(<CccdInputPage />)} />
         <Route path="cccd-verify" element={withSuspense(<CccdVerifyPage />)} />
         <Route path="vneid-login" element={withSuspense(<VneidLoginPage />)} />
         <Route path="services" element={withSuspense(<ServicesPage />)} />

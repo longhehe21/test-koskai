@@ -4,10 +4,7 @@
   "version": "0.0.1",
   "description": "AI Kiosk Hanh Chinh Cong",
   "workspaces": [
-    "kiosk"
-  ],
-  "_comment_disabledWorkspaces": "shared + server tạm disable trong giai đoạn UI-only. Restore khi bật lại backend: thêm 'shared' và 'server' vào workspaces, khôi phục @kiosk-ai/shared trong kiosk/package.json.",
-  "_disabledWorkspaces": [
+    "kiosk",
     "shared",
     "server"
   ],
@@ -37,5 +34,8 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2"
   }
 }

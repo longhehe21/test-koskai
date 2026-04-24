@@ -4,7 +4,13 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import jwt from '@fastify/jwt';
+import multipart from '@fastify/multipart';
 import healthRoute from './routes/health.js';
+import scanRoute from './routes/scan.route.js';
+import sessionRoute from './routes/session.route.js';
+import applicationRoute from './routes/application.route.js';
+import documentRoute from './routes/document.route.js';
+import authPlugin from './plugins/auth.js';
 
 export async function buildApp() {
   const fastify = Fastify({
@@ -16,8 +22,9 @@ export async function buildApp() {
   await fastify.register(helmet);
 
   await fastify.register(cors, {
-    origin: process.env.KIOSK_SERVER_URL ?? 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    // Dev: cho phép Electron renderer (file://) + dev server Vite
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   await fastify.register(rateLimit, {
@@ -29,7 +36,19 @@ export async function buildApp() {
     secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
   });
 
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max ảnh scan
+    },
+  });
+
+  await fastify.register(authPlugin);
+
   await fastify.register(healthRoute);
+  await fastify.register(scanRoute);
+  await fastify.register(sessionRoute);
+  await fastify.register(applicationRoute);
+  await fastify.register(documentRoute);
 
   return fastify;
 }

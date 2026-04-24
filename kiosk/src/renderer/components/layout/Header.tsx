@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLayoutStore } from '@store/layoutStore';
+import { useSessionUserStore } from '@store/sessionUserStore';
 import {
   isSoundMuted,
   sound,
@@ -20,6 +21,10 @@ import { purgeSession } from '@utils/purgeSession';
 export function Header() {
   const navigate = useNavigate();
   const header = useLayoutStore((s) => s.header);
+  // Tên hiển thị badge "Người dùng" — ưu tiên user đã xác thực (sessionUser),
+  // fallback về userName set qua usePageHeader, cuối cùng là literal
+  const sessionUser = useSessionUserStore((s) => s.user);
+  const displayName = sessionUser?.hoTen ?? header.userName ?? 'Người dùng';
   // Đồng bộ mute state từ service (singleton) → re-render khi user toggle.
   const [muted, setMuted] = useState(() => isSoundMuted());
   useEffect(() => subscribeSoundMuted(setMuted), []);
@@ -104,7 +109,7 @@ export function Header() {
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
-              <span>{header.userName ?? 'Người dùng'}</span>
+              <span>{displayName}</span>
               <svg
                 className="header-user-caret"
                 width="12"
