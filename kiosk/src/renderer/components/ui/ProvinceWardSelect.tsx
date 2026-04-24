@@ -20,6 +20,8 @@ interface ProvinceWardSelectProps {
   wardLabel?: string;
   provinceRequired?: boolean;
   wardRequired?: boolean;
+  /** Class bổ sung cho label (vd: tkbtv-label--sub) khi có provinceLabel/wardLabel. */
+  labelClassName?: string;
   /** Disable cả 2 dropdown — dùng khi auto-fill không cho user sửa */
   disabled?: boolean;
 }
@@ -52,6 +54,7 @@ export function ProvinceWardSelect({
   wardLabel,
   provinceRequired,
   wardRequired,
+  labelClassName,
   disabled = false,
 }: ProvinceWardSelectProps) {
   const [provinces, setProvinces] = useState<DropdownItem[]>([]);
@@ -158,11 +161,12 @@ export function ProvinceWardSelect({
     );
   }
 
+  const labelCls = `tkbtv-label${labelClassName ? ` ${labelClassName}` : ''}`;
   return (
     <>
       <div className="tkbtv-field tkbtv-field--half">
         {provinceLabel && (
-          <label className="tkbtv-label">
+          <label className={labelCls}>
             {provinceLabel}
             {provinceRequired && <span className="tkbtv-req"> *</span>}
           </label>
@@ -171,7 +175,7 @@ export function ProvinceWardSelect({
       </div>
       <div className="tkbtv-field tkbtv-field--half">
         {wardLabel && (
-          <label className="tkbtv-label">
+          <label className={labelCls}>
             {wardLabel}
             {wardRequired && <span className="tkbtv-req"> *</span>}
           </label>
