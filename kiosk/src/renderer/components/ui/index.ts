@@ -8,6 +8,7 @@ export { DraftSavedToast } from './DraftSavedToast';
 export { UnsavedChangesModal } from './UnsavedChangesModal';
 export { IdleWarningModal } from './IdleWarningModal';
 export { ConfirmSubmitModal } from './ConfirmSubmitModal';
+export { SubmitBlockedModal } from './SubmitBlockedModal';
 export { PrintPreviewModal } from './PrintPreviewModal';
 export { ProvinceWardSelect } from './ProvinceWardSelect';
 export { LuuTruHoSoModal } from './LuuTruHoSoModal';

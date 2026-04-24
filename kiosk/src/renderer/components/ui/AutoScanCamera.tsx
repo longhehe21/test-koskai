@@ -260,29 +260,61 @@ export function AutoScanCamera({
   }, [capturedImg, lastResult, onKeep]);
 
   const captureDisabled = mode !== 'ready';
-  const captureLabel = mode === 'processing' ? 'Đang nhận dạng...' : 'Chụp tài liệu';
+  const isProcessing = mode === 'processing';
+  const statusLabel = isProcessing ? 'ĐANG NHẬN DẠNG' : 'SẴN SÀNG';
 
   return (
     <div className="auto-scan-root">
       {error && <div className="auto-scan-error">❌ {error}</div>}
 
-      <div className={`auto-scan-stage${rotate90 ? ' is-rotated' : ''}`}>
+      <div className={`auto-scan-stage${rotate90 ? ' is-rotated' : ''}${isProcessing ? ' is-processing' : ''}`}>
         <video ref={videoRef} className="auto-scan-video" muted playsInline />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+        {/* Viewfinder frame — corner brackets tech style */}
+        <div className="auto-scan-viewfinder" aria-hidden="true">
+          <span className="auto-scan-corner auto-scan-corner--tl" />
+          <span className="auto-scan-corner auto-scan-corner--tr" />
+          <span className="auto-scan-corner auto-scan-corner--bl" />
+          <span className="auto-scan-corner auto-scan-corner--br" />
+          <span className="auto-scan-scanline" />
+        </div>
+
+        {/* Status HUD — góc trên */}
+        <div className={`auto-scan-hud${isProcessing ? ' is-processing' : ''}`}>
+          <span className="auto-scan-hud-dot" />
+          <span className="auto-scan-hud-text">{statusLabel}</span>
+        </div>
+
+        {/* Warning — nổi trên camera, không đẩy layout */}
+        {warnMsg && (
+          <div className="auto-scan-warn">⚠️ {warnMsg}</div>
+        )}
+
+        {/* Nút chụp floating — ring concentric kiểu iPhone/DSLR */}
+        <button
+          type="button"
+          className={`auto-scan-capture-btn${isProcessing ? ' is-processing' : ''}`}
+          onClick={handleCapture}
+          disabled={captureDisabled}
+          aria-label={isProcessing ? 'Đang nhận dạng' : 'Chụp tài liệu'}
+        >
+          <span className="auto-scan-capture-ring" aria-hidden="true" />
+          <span className="auto-scan-capture-core" aria-hidden="true">
+            {isProcessing ? (
+              <span className="auto-scan-capture-spinner" />
+            ) : (
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            )}
+          </span>
+          <span className="auto-scan-capture-tip">
+            {isProcessing ? 'Đang nhận dạng...' : 'Chụp tài liệu'}
+          </span>
+        </button>
       </div>
-
-      {warnMsg && (
-        <div className="auto-scan-warn">⚠️ {warnMsg}</div>
-      )}
-
-      <button
-        type="button"
-        className="auto-scan-capture-btn"
-        onClick={handleCapture}
-        disabled={captureDisabled}
-      >
-        {captureLabel}
-      </button>
 
       {/* Modal kết quả — scope vào .kiosk-content-panel */}
       <Modal
@@ -324,14 +356,23 @@ export function AutoScanCamera({
                 className="auto-scan-result-btn auto-scan-result-btn--retake"
                 onClick={handleRetake}
               >
-                🔄 Chụp lại
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8" />
+                  <path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16" />
+                  <path d="M3 21v-5h5" />
+                </svg>
+                <span>Chụp lại</span>
               </button>
               <button
                 type="button"
                 className="auto-scan-result-btn auto-scan-result-btn--keep"
                 onClick={handleKeep}
               >
-                ✓ Giữ ảnh
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>Giữ ảnh</span>
               </button>
             </div>
           </div>

@@ -2,7 +2,7 @@
  * Application service — wrapper các API /applications/* cho FE.
  * Dùng bởi các page TaoHoSo* (lưu nháp) + HoSoCuaToiPage (list).
  */
-import { api } from './api';
+import { api, ApiError } from './api';
 import type { DraftForm } from '@store/draftFormStore';
 
 export interface DraftSummary {
@@ -189,7 +189,8 @@ export async function hydrateScansFromServer(
 /**
  * Helper: tạo-hoặc-update draft.
  *  - Nếu chưa có appId → POST create + PATCH form
- *  - Nếu đã có → chỉ PATCH
+ *  - Nếu đã có → PATCH; nếu PATCH trả 404 (appId stale — đã submit / bị xóa /
+ *    không còn là draft) → fallback tạo draft mới rồi PATCH lại.
  * Trả về {appId, trackingCode}.
  */
 export async function createOrUpdateDraft(
@@ -197,21 +198,25 @@ export async function createOrUpdateDraft(
   formData: DraftForm,
   existingAppId: number | null,
 ): Promise<{ appId: number; trackingCode: string }> {
-  let appId = existingAppId;
-  let trackingCode = '';
-  if (!appId) {
+  const createNew = async (): Promise<{ appId: number; trackingCode: string }> => {
     const created = await createDraft(procedureCode);
-    appId = created.id;
-    trackingCode = created.trackingCode;
-  } else {
-    // Load existing để lấy trackingCode
-    try {
-      const detail = await getApplication(appId);
-      trackingCode = detail.trackingCode;
-    } catch {
-      trackingCode = '';
-    }
+    await saveFormData(created.id, formData);
+    return { appId: created.id, trackingCode: created.trackingCode };
+  };
+
+  if (!existingAppId) {
+    return createNew();
   }
-  await saveFormData(appId, formData);
-  return { appId, trackingCode };
+
+  try {
+    // Load existing để lấy trackingCode — nếu 404 → stale, create fresh
+    const detail = await getApplication(existingAppId);
+    await saveFormData(existingAppId, formData);
+    return { appId: existingAppId, trackingCode: detail.trackingCode };
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      return createNew();
+    }
+    throw err;
+  }
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { Modal, ConfirmModal } from '@components/ui';
+import { useTamVangFlowStore } from '@store/tamVangFlowStore';
 
 type Answer = 'yes' | 'no';
 type ModalKind = 'tu-phap' | 'nghia-vu' | null;
@@ -73,9 +74,20 @@ export default function XacDinhDoiTuongPage() {
 
   const bothAnswered = modal === 'tu-phap' ? ct03 !== null && vanBan !== null : ct03 !== null;
 
+  // Persist answers vào store → trang tao-khai-bao-tam-vang validator đọc lại.
+  // Clear trước khi set để không leak state từ lần open modal trước.
+  const persistAnswers = (ct03Val: Answer, vanBanVal: Answer | null) => {
+    useTamVangFlowStore.getState().clear();
+    useTamVangFlowStore.getState().setAnswers({
+      ct03: ct03Val === 'yes' ? '1' : '0',
+      vanBan: vanBanVal ? (vanBanVal === 'yes' ? '1' : '0') : undefined,
+    });
+  };
+
   const handleNext = () => {
     if (modal === 'nghia-vu') {
       if (!ct03) return;
+      persistAnswers(ct03, null);
       const target = ct03 === 'no' ? '/tao-khai-bao-tam-vang' : '/scan-tam-vang';
       closeModal();
       window.setTimeout(() => navigate(target), 250);
@@ -83,6 +95,7 @@ export default function XacDinhDoiTuongPage() {
     }
 
     if (!ct03 || !vanBan) return;
+    persistAnswers(ct03, vanBan);
     if (vanBan === 'no') {
       const bothMissing = ct03 === 'no';
       const highlight = bothMissing

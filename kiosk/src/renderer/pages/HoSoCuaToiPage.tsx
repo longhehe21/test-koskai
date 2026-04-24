@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import {
   deleteApplication,
+  getApplication,
   listMyApplications,
   type DraftSummary,
 } from '@services/applicationService';
@@ -41,21 +42,31 @@ const STATUS_CONFIG: Record<Status, { label: string; cls: string }> = {
 };
 
 /**
- * Map procedureCode → route "xem trước hồ sơ" (XemTruocHoSoPage).
- * Click row trong bảng Hồ sơ của tôi → về trang xem trước của thủ tục tương
- * ứng, hiện các tài liệu đã scan trong session (qua useScanStore). User có
- * thể bấm Quay lại để scan lại.
- * null → procedureCode không rõ → giữ nguyên trang.
+ * Map procedureCode (+ optional variant) → route form tạo hồ sơ tương ứng.
+ *
+ * Một số procedure có nhiều variant UI (tạm trú + gia hạn đều có 2 variant:
+ * nhân-khẩu-hộ và danh-sách). Form save `__variant` vào formDataJson; caller
+ * đọc variant → chọn route đúng. Không có variant → dùng route default.
+ *
+ * Cover cả 2 flow attach:
+ *   - User chọn "Đã có" → scan → form: resume thấy scans trong scanStore
+ *   - User chọn "Chưa có" → form trực tiếp: resume chỉ có formData
  */
-function getScanRoute(procedureCode: string): string | null {
+function getEditRoute(procedureCode: string, variant?: string | null): string | null {
   switch (procedureCode) {
-    case 'thuong-tru': return '/xem-truoc-ho-khau';
-    case 'tam-tru': return '/xem-truoc-tam-tru';
-    case 'tam-vang': return '/xem-truoc-tam-vang';
-    case 'luu-tru': return '/xem-truoc-luu-tru';
+    case 'thuong-tru': return '/tao-ho-so-thuong-tru';
+    case 'tam-tru':
+      return variant === 'danh-sach'
+        ? '/tao-ho-so-tam-tru-danh-sach'
+        : '/tao-ho-so-tam-tru-nhan-khau-ho';
+    case 'tam-vang': return '/tao-khai-bao-tam-vang';
+    case 'luu-tru': return '/tao-thong-bao-luu-tru';
     case 'gia-han-tam-tru':
-    case 'gia-han': return '/xem-truoc-gia-han';
-    case 'xoa-dang-ky': return '/xem-truoc-xoa-dang-ky';
+    case 'gia-han':
+      return variant === 'gia-han-danh-sach' || variant === 'danh-sach'
+        ? '/tao-ho-so-gia-han-danh-sach'
+        : '/tao-ho-so-gia-han';
+    case 'xoa-dang-ky': return '/tao-ho-so-xoa-dang-ky';
     default: return null;
   }
 }
@@ -319,13 +330,36 @@ export default function HoSoCuaToiPage() {
     return () => document.removeEventListener('click', handleOutside);
   }, [statusOpen, dateOpen]);
 
-  // Click hàng → mở trang "xem trước hồ sơ" kèm ?appId=X.
-  // XemTruocHoSoPage thấy appId → fetch application_files + hydrate scanStore
-  // → hiện đúng ảnh đã lưu của hồ sơ đó (cross-session).
-  const handleRowClick = (record: DocRecord) => {
-    if (!record.procedureCode || !record.appId) return;
-    const route = getScanRoute(record.procedureCode);
-    if (route) navigate(`${route}?appId=${record.appId}`);
+  // Click hàng:
+  //  - Draft: fetch detail để đọc __variant trong formDataJson → getEditRoute
+  //    trả route tương ứng variant. Wrapper hydrate formData + scans.
+  //  - Non-draft: navigate trực tiếp sang trang nộp thành công (mã + QR).
+  //
+  // Async vì phải fetch detail cho draft — show spinner inline nếu chậm.
+  const [navigating, setNavigating] = useState<number | null>(null);
+
+  const handleRowClick = async (record: DocRecord) => {
+    if (!record.appId) return;
+    if (record.status !== 'draft') {
+      navigate(`/nop-ho-so-thanh-cong?appId=${record.appId}`);
+      return;
+    }
+    if (!record.procedureCode) return;
+
+    setNavigating(record.appId);
+    try {
+      const detail = await getApplication(record.appId);
+      const variant = (detail.formDataJson as { __variant?: string } | null)?.__variant ?? null;
+      const route = getEditRoute(record.procedureCode, variant);
+      if (route) navigate(`${route}?appId=${record.appId}`);
+    } catch (err) {
+      console.warn('[HoSoCuaToi] fetch variant fail:', (err as Error).message);
+      // Fallback: dùng route default (không variant)
+      const route = getEditRoute(record.procedureCode);
+      if (route) navigate(`${route}?appId=${record.appId}`);
+    } finally {
+      setNavigating(null);
+    }
   };
 
   // Xóa nháp: confirm modal → DELETE /applications/:id → bỏ khỏi list.
@@ -651,13 +685,25 @@ export default function HoSoCuaToiPage() {
                 <tbody>
                   {filtered.map((r) => {
                     const cfg = STATUS_CONFIG[r.status];
-                    const canClick = !!r.procedureCode && !!getScanRoute(r.procedureCode);
+                    // Draft → cần procedureCode map route. Non-draft → luôn clickable
+                    // (navigate sang nop-ho-so-thanh-cong bất kể thủ tục nào).
+                    const canClick = !!r.appId && (
+                      r.status !== 'draft'
+                      || (!!r.procedureCode && !!getEditRoute(r.procedureCode))
+                    );
+                    const isNavigating = navigating === r.appId;
                     return (
                       <tr
                         key={r.stt}
                         data-status={r.status}
-                        onClick={() => canClick && handleRowClick(r)}
-                        style={canClick ? { cursor: 'pointer' } : undefined}
+                        onClick={() => canClick && !isNavigating && void handleRowClick(r)}
+                        style={
+                          isNavigating
+                            ? { cursor: 'wait', opacity: 0.6 }
+                            : canClick
+                              ? { cursor: 'pointer' }
+                              : undefined
+                        }
                       >
                         <td className="hsct-td-stt">{pad(r.stt)}</td>
                         <td>

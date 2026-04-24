@@ -20,9 +20,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useHoKhauFlowStore } from '@store/hoKhauFlowStore';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { useTamVangFlowStore } from '@store/tamVangFlowStore';
 import { useScanStore } from '@store/scanStore';
 import { AutoScanCamera, type MatchInfo } from '@components/ui/AutoScanCamera';
 import { Modal } from '@components/ui/Modal';
+import { ConfirmSubmitModal } from '@components/ui';
 
 interface ScanPage {
   name: string;
@@ -41,7 +43,26 @@ interface ScanConfig {
   pageTitle: string;
   nextRoute: string;
   pages: ScanPage[];
+  /**
+   * Ràng buộc mẫu tờ khai chính — thường trú VN dùng CT01, VK dùng CT02, tạm vắng dùng CT03.
+   * null = không ràng buộc (tạm trú/lưu trú).
+   * handleKeep validate match.code nhầm prefix sẽ reject + cảnh báo (Tier 1).
+   */
+  expectedFormCode?: 'ct01' | 'ct02' | 'ct03' | null;
+  /**
+   * User đã tick "Chưa có" ở đơn chính (Q1/CT0X) trong HSDK modal.
+   * → `buildXxxCfg` không render page đơn chính → validateScan KHÔNG được bắt
+   *   user "scan CT0X trước" (Tier 2) vì user đâu có đơn để scan.
+   * Tier 1 (sai mẫu CT0X khác) vẫn apply để phòng user lỡ scan nhầm loại.
+   */
+  skipFormRequired?: boolean;
 }
+
+/**
+ * Danh sách các prefix CT hợp lệ — dùng trong Tier 1 validateScan để detect
+ * user scan nhầm mẫu (vd expect CT03 mà scan trúng CT01).
+ */
+const CT_PREFIXES = ['ct01-', 'ct02-', 'ct03-'] as const;
 
 const CT02_BRANCHES = new Set([
   'nuoc-ngoai',
@@ -63,18 +84,6 @@ const BRANCHES_WITH_Q3 = new Set([
 ]);
 
 const STATIC_CONFIGS: Record<string, ScanConfig> = {
-  '/scan-tam-vang': {
-    procedureCode: 'tam-vang',
-    flowKey: 'tam-vang',
-    docImage: '/assets/mauct03khaibaotamvang.svg',
-    docLabel: 'Mẫu CT03',
-    pageTitle: 'Quét tài liệu – Tạm vắng',
-    nextRoute: '/xem-truoc-tam-vang',
-    pages: [
-      { name: 'Phiếu khai báo tạm vắng (CT03)', docCode: 'ct03-phieu-tam-vang' },
-      { name: 'Văn bản đồng ý của cơ quan giám sát', docCode: 'van-ban-dong-y-giam-sat-giao-duc' },
-    ],
-  },
   '/scan-luu-tru': {
     procedureCode: 'luu-tru',
     flowKey: 'luu-tru',
@@ -229,6 +238,61 @@ function buildTamTruCfg(variant: TamTruScanVariant): ScanConfig {
     pageTitle: 'Quét tài liệu – Tạm trú',
     nextRoute: nextRouteMap[variant],
     pages,
+    // Q1 "Chưa có" → skip Tier 2 của validateScan (không ép scan đơn chính
+    // trước) — user chỉ scan giấy tờ kèm (Q2/Q3) rồi vào form khai trực tiếp.
+    skipFormRequired: !flow.hasQ1,
+  };
+}
+
+/**
+ * Tạm vắng — 2 tài liệu theo HSDK modal ở XacDinhDoiTuongPage:
+ *  - CT03 (Phiếu khai báo tạm vắng) — Q1
+ *  - Văn bản đồng ý của cơ quan giám sát — Q2 (chỉ áp cho nhóm tư pháp)
+ *
+ * Pages dynamic theo `tamVangFlowStore` (hsdkCt03 / hsdkVanBan): chỉ render
+ * tài liệu user đã tick "Đã có". Fallback show đủ khi store rỗng (truy cập
+ * URL direct — tránh crash).
+ *
+ * expectedFormCode = 'ct03' → validateScan Tier 1 reject khi user lỡ scan CT01/CT02.
+ * skipFormRequired khi user tick CT03 "Chưa có" → user chỉ scan văn bản, Tier 2 skip.
+ */
+function buildTamVangCfg(): ScanConfig {
+  const flow = useTamVangFlowStore.getState();
+  const hasCt03 = flow.hsdkCt03 !== '0';
+  const hasVanBan = flow.hsdkVanBan !== '0';
+
+  const ct03Page: ScanPage = {
+    name: 'Phiếu khai báo tạm vắng (CT03)',
+    image: '/assets/mauct03khaibaotamvang.svg',
+    docCode: 'ct03-phieu-tam-vang',
+  };
+  const vanBanPage: ScanPage = {
+    name: 'Văn bản đồng ý của cơ quan giám sát',
+    image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+    docCode: 'van-ban-dong-y-giam-sat-giao-duc',
+  };
+
+  // flow rỗng (hsdkCt03/hsdkVanBan đều null) = user truy cập URL direct → render đủ
+  // để không crash; bình thường XacDinhDoiTuongPage đã set store trước khi navigate.
+  const storeEmpty = flow.hsdkCt03 === null && flow.hsdkVanBan === null;
+  const pages: ScanPage[] = storeEmpty
+    ? [ct03Page, vanBanPage]
+    : [
+        ...(hasCt03 ? [ct03Page] : []),
+        ...(hasVanBan ? [vanBanPage] : []),
+      ];
+
+  return {
+    procedureCode: 'tam-vang',
+    flowKey: 'tam-vang',
+    docImage: pages[0]?.image ?? ct03Page.image ?? '',
+    docLabel: hasCt03 ? 'Mẫu CT03' : 'Văn bản đồng ý',
+    pageTitle: 'Quét tài liệu – Tạm vắng',
+    nextRoute: '/xem-truoc-tam-vang',
+    pages,
+    expectedFormCode: 'ct03',
+    // User tick CT03 "Chưa có" → chỉ scan văn bản, không bị Tier 2 chặn.
+    skipFormRequired: flow.hsdkCt03 === '0',
   };
 }
 
@@ -366,6 +430,12 @@ function buildHoKhauCfg(): ScanConfig {
     pageTitle: 'Quét tài liệu – Hộ khẩu',
     nextRoute: '/xem-truoc-ho-khau',
     pages: pages.length ? pages : fallbackPages,
+    // VN branches → CT01; VK branches (nuoc-ngoai + *-vk) → CT02
+    expectedFormCode: isNuocNgoai ? 'ct02' : 'ct01',
+    // Q1 (hsdkTc01) "Chưa có" → user không có CT01/CT02 để scan. validateScan
+    // phải bỏ Tier 2 (ép scan form chính trước) để user scan được secondary
+    // docs (Giấy giới thiệu / QSDĐ / Q2 / Q3) rồi vào form khai trực tiếp.
+    skipFormRequired: !userHasForm,
   };
 }
 
@@ -383,7 +453,8 @@ export default function ScanTaiLieuPage() {
     if (location.pathname === '/scan-gia-han') return buildTamTruCfg('gia-han-ca-nhan');
     if (location.pathname === '/scan-gia-han-danh-sach') return buildTamTruCfg('gia-han-danh-sach');
     if (location.pathname === '/scan-xoa-dang-ky') return buildTamTruCfg('xoa-dang-ky');
-    return STATIC_CONFIGS[location.pathname] ?? STATIC_CONFIGS['/scan-tam-vang'];
+    if (location.pathname === '/scan-tam-vang') return buildTamVangCfg();
+    return STATIC_CONFIGS[location.pathname] ?? STATIC_CONFIGS['/scan-luu-tru'];
   }, [location.pathname]);
 
   usePageHeader({ title: cfg.pageTitle });
@@ -414,7 +485,58 @@ export default function ScanTaiLieuPage() {
   // Enable "Tiếp tục" khi có ≥ 1 ảnh (user tự quyết đã đủ hay chưa)
   const hasAnyScan = scannedList.length > 0;
 
+  // Validate form CT01/CT02 theo branch VN/VK. cfg.expectedFormCode được set
+  // bởi buildHoKhauCfg cho thường trú. Null = flow khác không ràng buộc.
+  //
+  // 3 tier check:
+  //  1. match.code là CT sai prefix → reject (VD VK scan nhầm CT01).
+  //  2. Chưa có CT form nào trong scanStore + current scan KHÔNG phải expected
+  //     CT → reject (chống chụp linh tinh khi chưa scan form chính). Cho phép
+  //     secondary docs chỉ sau khi đã có form đúng.
+  //     → SKIP khi cfg.skipFormRequired (user đã tick "Chưa có" đơn chính ở
+  //     HSDK modal) — user chỉ scan giấy tờ kèm nên không có form chính để ép.
+  //  3. Null match hoặc secondary docs sau khi có form → pass.
+  const validateScan = (match: MatchInfo | null): string | null => {
+    const expected = cfg.expectedFormCode;
+    if (!expected) return null;
+
+    const matchCode = match?.code ?? '';
+    const expectedPrefix = `${expected}-`;
+    const expectedName = expected.toUpperCase();
+
+    // Tier 1: match.code thuộc CT khác với expected → rõ ràng nhầm form.
+    // Tổng quát cho CT01/CT02/CT03 thay vì hardcode cặp ct01↔ct02.
+    // Giữ bất kể skipFormRequired để phòng user lỡ scan nhầm loại.
+    const wrongCt = CT_PREFIXES.find((p) => p !== expectedPrefix && matchCode.startsWith(p));
+    if (wrongCt) {
+      const wrongName = wrongCt.slice(0, -1).toUpperCase();
+      return `Ảnh đang là mẫu ${wrongName}. Thủ tục này cần mẫu ${expectedName} — vui lòng scan đúng mẫu.`;
+    }
+
+    // Tier 2: chưa có form chính → phải scan form chính trước.
+    // User tick Q1 "Chưa có" → buildCfg bỏ page CT01/CT02, user chỉ scan giấy
+    // tờ kèm. Không được block — bỏ qua Tier 2 hoàn toàn.
+    if (cfg.skipFormRequired) return null;
+    const hasForm = Object.entries(docs).some(
+      ([k, d]) => k.startsWith(`${cfg.flowKey}:`) && d.matchCode.startsWith(expectedPrefix),
+    );
+    if (!hasForm && !matchCode.startsWith(expectedPrefix)) {
+      return `Vui lòng scan mẫu ${expectedName} (tờ khai chính) trước khi thêm các giấy tờ khác.`;
+    }
+
+    return null;
+  };
+
+  const [formMismatchMsg, setFormMismatchMsg] = useState<string | null>(null);
+
   const handleKeep = (dataUrl: string, match: MatchInfo | null, ocrText: string) => {
+    // Kiểm tra nhầm/thiếu mẫu CT01/CT02 theo branch — nếu không đạt → cảnh báo
+    const mismatch = validateScan(match);
+    if (mismatch) {
+      setFormMismatchMsg(mismatch);
+      return;
+    }
+
     // Generate unique docCode theo match + timestamp → không conflict khi chụp nhiều trang cùng loại
     const prefix = match?.code ?? 'scan';
     const uniqueDocCode = `${prefix}-${Date.now()}`;
@@ -580,6 +702,17 @@ export default function ScanTaiLieuPage() {
           </div>
         )}
       </Modal>
+
+      {/* Cảnh báo nhầm mẫu CT01/CT02 theo branch VN/VK đã chọn */}
+      <ConfirmSubmitModal
+        open={formMismatchMsg !== null}
+        onCancel={() => setFormMismatchMsg(null)}
+        onConfirm={() => setFormMismatchMsg(null)}
+        title="Sai mẫu tờ khai"
+        description={formMismatchMsg ?? ''}
+        confirmLabel="Đã hiểu"
+        cancelLabel="Đóng"
+      />
     </div>
   );
 }

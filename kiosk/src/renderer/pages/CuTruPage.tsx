@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { LuuTruHoSoModal } from '@components/ui';
+import { resetAllResidenceFlows } from '@utils/resetFlow';
 
 interface SubService {
   id: string;
@@ -91,6 +92,14 @@ export default function CuTruPage() {
 
   const handleCardClick = (id: string) => {
     setActiveId(id);
+    // Click card = intent "start fresh" → xóa mọi cache thủ tục đã saved
+    // + reset flow-specific store (HSDK answers, variant, ...). Resume draft
+    // đi qua "Hồ sơ của tôi" với ?appId, không qua /cu-tru.
+    //
+    // Mid-flow pressing back to /cu-tru rồi click lại card = cũng clear
+    // (acceptable tradeoff — user chủ động navigate về hub).
+    resetAllResidenceFlows();
+
     if (id === 'tam-vang') {
       window.setTimeout(() => navigate('/xac-dinh-doi-tuong'), 400);
     } else if (id === 'luu-tru') {
