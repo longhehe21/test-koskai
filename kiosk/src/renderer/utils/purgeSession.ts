@@ -1,5 +1,7 @@
 import { useConversationStore } from '@store/conversationStore';
+import { useDraftFormStore } from '@store/draftFormStore';
 import { useHoKhauFlowStore } from '@store/hoKhauFlowStore';
+import { useScanStore } from '@store/scanStore';
 import { useSessionUserStore } from '@store/sessionUserStore';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
 
@@ -19,6 +21,8 @@ export function purgeSession(): void {
   useConversationStore.getState().clearMessages();
   useHoKhauFlowStore.getState().clear();
   useTamTruFlowStore.getState().clear();
+  useScanStore.getState().clearAll(); // ảnh scan (PII) phải clear cùng session
+  useDraftFormStore.getState().clearAll(); // draft form client cache — server-side vẫn giữ
 
   // Xóa thêm sessionStorage keys ngoài store (nếu có UI-state transient).
   try {

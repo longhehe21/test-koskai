@@ -2,6 +2,12 @@ import '@styles/pages/ho-so-cua-toi.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
+import {
+  deleteApplication,
+  listMyApplications,
+  type DraftSummary,
+} from '@services/applicationService';
+import { ConfirmSubmitModal } from '@components/ui';
 
 type Status = 'draft' | 'processing' | 'approved' | 'rejected';
 type StatusFilter = Status | 'all';
@@ -21,6 +27,10 @@ interface DocRecord {
   name: string;
   updated: string;
   status: Status;
+  /** Application ID trên server — dùng để navigate resume draft */
+  appId?: number;
+  /** Procedure code để xác định route navigate */
+  procedureCode?: string;
 }
 
 const STATUS_CONFIG: Record<Status, { label: string; cls: string }> = {
@@ -30,18 +40,33 @@ const STATUS_CONFIG: Record<Status, { label: string; cls: string }> = {
   rejected: { label: 'TỪ CHỐI', cls: 'hsct-status--rejected' },
 };
 
-const RECORDS: DocRecord[] = [
-  { stt: 1, code: 'BN-2024-001', name: 'Đăng ký tạm trú', updated: '10/05/2024 14:30', status: 'draft' },
-  { stt: 2, code: 'HS-2024-042', name: 'Khai báo tạm vắng', updated: '12/05/2024 14:30', status: 'processing' },
-  { stt: 3, code: 'HS-2024-015', name: 'Cấp lại thẻ BHYT', updated: '08/05/2024 14:30', status: 'approved' },
-  { stt: 4, code: 'HS-2024-009', name: 'Đăng ký kinh doanh', updated: '05/05/2024 14:30', status: 'rejected' },
-  { stt: 5, code: 'HS-2024-010', name: 'Đăng ký kinh doanh', updated: '05/05/2024 14:30', status: 'rejected' },
-  { stt: 6, code: 'HS-2024-019', name: 'Đăng ký kinh doanh', updated: '05/05/2024 14:30', status: 'rejected' },
-  { stt: 7, code: 'HS-2024-022', name: 'Đăng ký kinh doanh', updated: '05/05/2024 14:30', status: 'rejected' },
-  { stt: 8, code: 'HS-2024-039', name: 'Đăng ký kinh doanh', updated: '05/05/2024 14:30', status: 'rejected' },
-  { stt: 9, code: 'BN-2024-004', name: 'Đăng ký tạm trú', updated: '10/05/2024 14:30', status: 'draft' },
-  { stt: 10, code: 'BN-2024-007', name: 'Đăng ký tạm trú', updated: '10/05/2024 14:30', status: 'draft' },
-];
+/**
+ * Map procedureCode → route "xem trước hồ sơ" (XemTruocHoSoPage).
+ * Click row trong bảng Hồ sơ của tôi → về trang xem trước của thủ tục tương
+ * ứng, hiện các tài liệu đã scan trong session (qua useScanStore). User có
+ * thể bấm Quay lại để scan lại.
+ * null → procedureCode không rõ → giữ nguyên trang.
+ */
+function getScanRoute(procedureCode: string): string | null {
+  switch (procedureCode) {
+    case 'thuong-tru': return '/xem-truoc-ho-khau';
+    case 'tam-tru': return '/xem-truoc-tam-tru';
+    case 'tam-vang': return '/xem-truoc-tam-vang';
+    case 'luu-tru': return '/xem-truoc-luu-tru';
+    case 'gia-han-tam-tru':
+    case 'gia-han': return '/xem-truoc-gia-han';
+    case 'xoa-dang-ky': return '/xem-truoc-xoa-dang-ky';
+    default: return null;
+  }
+}
+
+/** Map statusCode từ backend → Status FE dùng để style cell. */
+function mapStatusCode(code: string): Status {
+  if (code === 'draft') return 'draft';
+  if (code === 'approved') return 'approved';
+  if (code === 'rejected' || code === 'cancelled') return 'rejected';
+  return 'processing'; // submitted, sent_to_ca, received_by_ca, processing
+}
 
 const VIET_DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const VIET_MONTHS = [
@@ -63,6 +88,13 @@ function sameDate(a: Date | null, b: Date | null): boolean {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function parseUpdated(str: string): Date | null {
@@ -149,17 +181,15 @@ function Calendar({ year, month, fromDate, toDate, onNav, onPick }: CalendarProp
   );
 }
 
-function getActionsJsx(status: Status): JSX.Element {
+function getActionsJsx(
+  record: DocRecord,
+  onDeleteDraft: (record: DocRecord) => void,
+): JSX.Element {
+  const status = record.status;
   const EYE = (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-  const EDIT = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   );
   const DELETE = (
@@ -188,10 +218,14 @@ function getActionsJsx(status: Status): JSX.Element {
   switch (status) {
     case 'draft':
       return (
-        <>
-          <button className="hsct-action-btn" title="Sửa">{EDIT}</button>
-          <button className="hsct-action-btn" title="Xóa">{DELETE}</button>
-        </>
+        <button
+          className="hsct-action-btn"
+          title="Xóa"
+          onClick={(e) => {
+            e.stopPropagation(); // Đừng trigger row click (navigate scan page)
+            onDeleteDraft(record);
+          }}
+        >{DELETE}</button>
       );
     case 'processing':
       return <button className="hsct-action-btn" title="Xem">{EYE}</button>;
@@ -248,6 +282,33 @@ export default function HoSoCuaToiPage() {
 
   usePageHeader({ title: 'Hồ sơ của tôi' });
 
+  // Load applications từ server (cross-session per citizen)
+  const [records, setRecords] = useState<DocRecord[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list: DraftSummary[] = await listMyApplications();
+        if (cancelled) return;
+        const mapped: DocRecord[] = list.map((it, i) => ({
+          stt: i + 1,
+          code: it.trackingCode,
+          name: it.procedureName,
+          updated: formatDateTime(it.updatedAt),
+          status: mapStatusCode(it.statusCode),
+          appId: it.id,
+          procedureCode: it.procedureCode,
+        }));
+        setRecords(mapped);
+        setLoadError(null);
+      } catch (err) {
+        if (!cancelled) setLoadError((err as Error).message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (!statusOpen && !dateOpen) return;
     const handleOutside = (e: MouseEvent) => {
@@ -258,8 +319,47 @@ export default function HoSoCuaToiPage() {
     return () => document.removeEventListener('click', handleOutside);
   }, [statusOpen, dateOpen]);
 
+  // Click hàng → mở trang "xem trước hồ sơ" kèm ?appId=X.
+  // XemTruocHoSoPage thấy appId → fetch application_files + hydrate scanStore
+  // → hiện đúng ảnh đã lưu của hồ sơ đó (cross-session).
+  const handleRowClick = (record: DocRecord) => {
+    if (!record.procedureCode || !record.appId) return;
+    const route = getScanRoute(record.procedureCode);
+    if (route) navigate(`${route}?appId=${record.appId}`);
+  };
+
+  // Xóa nháp: confirm modal → DELETE /applications/:id → bỏ khỏi list.
+  // Server check soft-delete chỉ cho draft (chưa submit) + đúng owner.
+  const [deleteTarget, setDeleteTarget] = useState<DocRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleRequestDelete = (record: DocRecord) => {
+    setDeleteError(null);
+    setDeleteTarget(record);
+  };
+  const handleCancelDelete = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError(null);
+  };
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?.appId) return;
+    setIsDeleting(true);
+    try {
+      await deleteApplication(deleteTarget.appId);
+      setRecords((prev) => prev.filter((r) => r.appId !== deleteTarget.appId));
+      setDeleteTarget(null);
+      setDeleteError(null);
+    } catch (err) {
+      setDeleteError((err as Error).message || 'Xóa thất bại');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filtered = useMemo(() => {
-    return RECORDS.filter((r) => {
+    return records.filter((r) => {
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
       const d = parseUpdated(r.updated);
       if (appliedFrom && d) {
@@ -272,7 +372,7 @@ export default function HoSoCuaToiPage() {
       }
       return true;
     });
-  }, [filterStatus, appliedFrom, appliedTo]);
+  }, [filterStatus, appliedFrom, appliedTo, records]);
 
   const handleDayPick = (d: Date) => {
     if (!fromDate || (fromDate && toDate)) {
@@ -551,20 +651,17 @@ export default function HoSoCuaToiPage() {
                 <tbody>
                   {filtered.map((r) => {
                     const cfg = STATUS_CONFIG[r.status];
+                    const canClick = !!r.procedureCode && !!getScanRoute(r.procedureCode);
                     return (
-                      <tr key={r.stt} data-status={r.status}>
+                      <tr
+                        key={r.stt}
+                        data-status={r.status}
+                        onClick={() => canClick && handleRowClick(r)}
+                        style={canClick ? { cursor: 'pointer' } : undefined}
+                      >
                         <td className="hsct-td-stt">{pad(r.stt)}</td>
                         <td>
-                          <a
-                            className="hsct-code"
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              navigate('/xem-truoc-ho-so');
-                            }}
-                          >
-                            {r.code}
-                          </a>
+                          <span className="hsct-code">{r.code}</span>
                         </td>
                         <td>{r.name}</td>
                         <td>{r.updated}</td>
@@ -572,7 +669,7 @@ export default function HoSoCuaToiPage() {
                           <span className={`hsct-status ${cfg.cls}`}>{cfg.label}</span>
                         </td>
                         <td>
-                          <div className="hsct-actions">{getActionsJsx(r.status)}</div>
+                          <div className="hsct-actions">{getActionsJsx(r, handleRequestDelete)}</div>
                         </td>
                       </tr>
                     );
@@ -608,6 +705,20 @@ export default function HoSoCuaToiPage() {
           )}
         </div>
       </div>
+
+      <ConfirmSubmitModal
+        open={!!deleteTarget}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Xác nhận xóa hồ sơ nháp"
+        description={
+          deleteError
+            ? `Lỗi: ${deleteError}. Vui lòng thử lại.`
+            : `Hồ sơ "${deleteTarget?.name ?? ''}" (mã ${deleteTarget?.code ?? ''}) sẽ bị xóa vĩnh viễn khỏi danh sách. Thao tác này không thể khôi phục.`
+        }
+        confirmLabel={isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+        cancelLabel="Hủy"
+      />
     </div>
   );
 }

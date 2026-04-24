@@ -1,0 +1,1 @@
+ALTER TABLE "application_files" ALTER COLUMN "document_code" SET DATA TYPE varchar(100);

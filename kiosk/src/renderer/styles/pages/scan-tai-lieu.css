@@ -99,6 +99,29 @@
   border-radius: 50px;
 }
 
+/* Empty state khi chưa có ảnh nào */
+.scan-tl-empty {
+  padding: 40px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  color: #64748b;
+}
+
+.scan-tl-empty p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+}
+
+.scan-tl-empty span {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 /* Scrollable list */
 .scan-tl-list {
   flex: 1;
@@ -115,6 +138,62 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border 0.15s;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.scan-tl-thumb:hover {
+  background: #f8fafc;
+}
+
+/* Item đang được scan → viền xanh */
+.scan-tl-thumb.is-current {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+/* Item đã scan → viền xanh lá + check mark */
+.scan-tl-thumb.is-scanned {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.scan-tl-thumb-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 2;
+}
+
+/* Badge trạng thái upload MinIO */
+.scan-tl-thumb-sync {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .scan-tl-thumb-img {
@@ -152,6 +231,181 @@
   font-weight: 600;
   color: #374151;
   text-align: center;
+}
+
+/* ===== Màn hình "Hoàn tất scan" thay camera khi allScanned ===== */
+.scan-done {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(134, 239, 172, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(34, 197, 94, 0.18) 0%, transparent 55%),
+    linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: scan-done-fade-in 400ms ease-out;
+}
+
+@keyframes scan-done-fade-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Decorative floating dots */
+.scan-done::before,
+.scan-done::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.08);
+  pointer-events: none;
+}
+.scan-done::before {
+  width: 200px;
+  height: 200px;
+  top: -60px;
+  left: -60px;
+}
+.scan-done::after {
+  width: 280px;
+  height: 280px;
+  bottom: -100px;
+  right: -80px;
+}
+
+.scan-done-icon {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 12px 40px rgba(34, 197, 94, 0.45),
+    0 0 0 8px rgba(34, 197, 94, 0.15),
+    0 0 0 16px rgba(34, 197, 94, 0.08);
+  animation: scan-done-pulse 2.4s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes scan-done-pulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 40px rgba(34, 197, 94, 0.45),
+      0 0 0 8px rgba(34, 197, 94, 0.15),
+      0 0 0 16px rgba(34, 197, 94, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 16px 52px rgba(34, 197, 94, 0.55),
+      0 0 0 14px rgba(34, 197, 94, 0.18),
+      0 0 0 26px rgba(34, 197, 94, 0.05);
+  }
+}
+
+.scan-done-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #14532d;
+  margin: 0;
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+.scan-done-subtitle {
+  font-size: 15px;
+  color: #166534;
+  margin: 0;
+  text-align: center;
+  opacity: 0.85;
+  z-index: 2;
+  position: relative;
+}
+
+.scan-done-thumbs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+  z-index: 2;
+  position: relative;
+  padding: 8px 0;
+}
+
+.scan-done-thumb {
+  width: 90px;
+  height: 120px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.18);
+  background: #fff;
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.scan-done-thumb:hover {
+  transform: translateY(-4px);
+}
+
+.scan-done-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-done-thumb-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.scan-done-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 2;
+  position: relative;
+  animation: scan-done-hint-bob 1.8s ease-in-out infinite;
+}
+
+@keyframes scan-done-hint-bob {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+
+.scan-done-hint svg {
+  flex-shrink: 0;
 }
 
 /* Sidebar footer — buttons stacked */

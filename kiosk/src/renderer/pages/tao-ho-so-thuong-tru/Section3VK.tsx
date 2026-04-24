@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { DatePicker, Dropdown, ProvinceWardSelect, type DropdownItem } from '@components/ui';
 import { useCurrentUser } from '@hooks/useCurrentUser';
+import { namesMatch, type Ct01Fields } from '@utils/parseCt01Ocr';
+
+interface Section3VKProps {
+  ocrFields?: Ct01Fields | null;
+}
 import {
   DAN_TOC_ITEMS,
   FOREIGN_COUNTRIES,
@@ -50,9 +55,12 @@ const emptyGiaDinh = (id: number): GiaDinhRow => ({
   choO: '',
 });
 
-export function Section3VK() {
+export function Section3VK({ ocrFields }: Section3VKProps = {}) {
   const user = useCurrentUser();
-  const [khaiBy, setKhaiBy] = useState<'tu-khai' | 'khai-ho'>('tu-khai');
+  const isKhaiHoFromOcr = !!(ocrFields?.hoTen && !namesMatch(ocrFields.hoTen, user.hoTen));
+  const [khaiBy, setKhaiBy] = useState<'tu-khai' | 'khai-ho'>(
+    isKhaiHoFromOcr ? 'khai-ho' : 'tu-khai',
+  );
 
   // Person fields
   const [hoTen, setHoTen] = useState('');
@@ -99,19 +107,28 @@ export function Section3VK() {
     setGioiTinh(GIOI_TINH_ITEMS.find((i) => i.name === user.gioiTinh) ?? null);
     setDanToc(DAN_TOC_ITEMS.find((i) => i.name === user.danToc) ?? null);
     setPhotoSrc(user.photoSrc);
+    setSdt(user.sdt);
+    setEmail('');
   };
-  const clearAutoFill = () => {
-    setHoTen('');
-    setCccd('');
-    setNgaySinh('');
-    setGioiTinh(null);
+  /** Khai hộ: fill từ OCR nếu có, còn lại trống */
+  const applyKhaiHoFromOcr = () => {
+    setHoTen(ocrFields?.hoTen ?? '');
+    setCccd(''); // OCR kém, user tự điền
+    setNgaySinh(ocrFields?.ngaySinh ?? '');
+    setGioiTinh(
+      ocrFields?.gioiTinh
+        ? GIOI_TINH_ITEMS.find((i) => i.name === ocrFields.gioiTinh) ?? null
+        : null,
+    );
     setDanToc(null);
     setPhotoSrc('');
+    setSdt(ocrFields?.sdt ?? '');
+    setEmail(ocrFields?.email ?? '');
   };
 
   useEffect(() => {
     if (khaiBy === 'tu-khai') applyAutoFill();
-    else clearAutoFill();
+    else applyKhaiHoFromOcr();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [khaiBy]);
 

@@ -20,6 +20,8 @@ interface ProvinceWardSelectProps {
   wardLabel?: string;
   provinceRequired?: boolean;
   wardRequired?: boolean;
+  /** Disable cả 2 dropdown — dùng khi auto-fill không cho user sửa */
+  disabled?: boolean;
 }
 
 interface ApiProvince {
@@ -50,6 +52,7 @@ export function ProvinceWardSelect({
   wardLabel,
   provinceRequired,
   wardRequired,
+  disabled = false,
 }: ProvinceWardSelectProps) {
   const [provinces, setProvinces] = useState<DropdownItem[]>([]);
   const [wards, setWards] = useState<DropdownItem[]>([]);
@@ -132,6 +135,7 @@ export function ProvinceWardSelect({
       placeholder={provincePlaceholder}
       items={provinces}
       onChange={handleProvinceChange}
+      disabled={disabled}
     />
   );
   const wardDropdown = (
@@ -140,7 +144,7 @@ export function ProvinceWardSelect({
       placeholder={wardPlaceholder}
       items={wards}
       onChange={handleWardChange}
-      disabled={!province}
+      disabled={disabled || !province}
     />
   );
 

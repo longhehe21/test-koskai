@@ -8,6 +8,14 @@ import { useIdleTimer } from '@hooks/useIdleTimer';
 import { useGlobalClickSound } from '@hooks/useGlobalClickSound';
 import { purgeSession } from '@utils/purgeSession';
 import { hideVirtualKeyboard } from '@utils/keyboardControl';
+import { useScanStore } from '@store/scanStore';
+
+/**
+ * Routes thuộc flow "sau khi scan" — user đang tiếp tục forward.
+ * Ở các route này KHÔNG clear scan store (giữ ảnh cho các bước tiếp theo).
+ * Rời khỏi tập này (về services, truong-hop, doi-tuong...) → clear.
+ */
+const POST_SCAN_PATTERN = /^\/(scan-|xem-truoc-|tao-ho-so-|nop-ho-so-thanh-cong)/;
 
 // 90s không hoạt động → cảnh báo 30s → tự kết thúc phiên.
 // Đủ thời gian user đọc form dài / nhập chậm, vẫn đảm bảo bảo mật PII.
@@ -52,6 +60,14 @@ export function Layout() {
     hideVirtualKeyboard();
     dismissWarning();
   }, [location.pathname, dismissWarning]);
+
+  // Clear scan store khi user rời khỏi flow (quay lại services, trường hợp, nguồn gốc...).
+  // Giữ ảnh khi user còn trong /scan-*, /xem-truoc-*, /tao-ho-so-*, /nop-ho-so-thanh-cong.
+  useEffect(() => {
+    if (!POST_SCAN_PATTERN.test(location.pathname)) {
+      useScanStore.getState().clearAll();
+    }
+  }, [location.pathname]);
 
   return (
     <div className="app-layout">

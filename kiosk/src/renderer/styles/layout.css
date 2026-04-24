@@ -301,7 +301,7 @@
   position: relative;
 }
 
-/* Left AI panel — 30% fixed */
+/* Left AI panel — 35% fixed */
 .kiosk-ai-panel {
   flex: 0 0 40%;
   background: linear-gradient(170deg, #799dff 0%, #4a7af5 30%, #2563eb 60%, #0052d0 100%);
@@ -311,7 +311,7 @@
   color: #ffffff;
 }
 
-/* Right content panel — 70%.
+/* Right content panel — 65%.
    zoom theo --kiosk-font-scale: Chromium scale toàn bộ (text/button/spacing
    hardcode px) — phù hợp accessibility A+/A- vì codebase dùng px rộng rãi.
    flex-direction: column để chứa FlowStepper (trên) + route-view (còn lại). */

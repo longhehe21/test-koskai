@@ -163,6 +163,68 @@
   zoom: 0.95;
 }
 
+/* Khi paper chứa docx-preview render — reset padding để tránh double padding */
+.xths-docx-paper:has(.docx-wrapper) {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.xths-docx-paper {
+  overflow-x: hidden;
+}
+
+/* Target class từ option `className: 'xths-docx-rendered'` — docx-preview
+   tự append `-wrapper` cho div ngoài, giữ tên cho section trong.
+   `zoom` scale toàn bộ (text + spacing) — override được cả inline font-size của docx. */
+.xths-docx-rendered-wrapper {
+  background: transparent !important;
+  padding: 8px 0 !important;
+  zoom: 0.65;
+}
+
+/* Force section (1 trang Word) fit container — override inline style 612pt từ docx-preview */
+.xths-docx-rendered-wrapper > section.xths-docx-rendered {
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+  margin: 0 auto 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 18pt 14pt !important;
+  box-sizing: border-box !important;
+}
+
+/* Tables: force fit + wrap cells */
+.xths-docx-rendered-wrapper table {
+  border-collapse: collapse;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.xths-docx-rendered-wrapper td,
+.xths-docx-rendered-wrapper th {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+}
+
+.xths-docx-rendered-wrapper img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Bất kỳ element hardcoded width nào → cap max-width */
+.xths-docx-rendered-wrapper * {
+  max-width: 100% !important;
+}
+
 /* Document top header */
 .xths-doc-top {
   display: flex;

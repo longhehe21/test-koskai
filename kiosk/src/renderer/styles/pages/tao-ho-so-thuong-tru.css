@@ -152,11 +152,19 @@
   font-weight: 500;
 }
 
+/* ===== Table title ===== */
+.thtt-table-title {
+  margin: 24px 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
 /* ===== Table ===== */
 .thtt-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 14px;
+  margin-top: 8px;
   font-size: 12px;
 }
 

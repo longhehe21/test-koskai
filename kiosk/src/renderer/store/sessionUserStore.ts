@@ -9,6 +9,8 @@ export interface SessionUser {
   cccd: string;
   sdt: string;
   photoSrc: string;
+  /** Ngày cấp CCCD (dd/mm/yyyy) — mock input, production sẽ đọc từ chip */
+  ngayCap?: string;
   thuongTru: {
     province: string;
     ward: string;
@@ -18,7 +20,12 @@ export interface SessionUser {
 
 interface SessionUserStore {
   user: SessionUser | null;
+  /** Session token từ backend sau khi xác thực — bearer cho request tiếp theo */
+  sessionToken: string | null;
+  /** Citizen ID từ backend */
+  citizenId: number | null;
   setUser: (user: SessionUser) => void;
+  setSession: (sessionToken: string, citizenId: number) => void;
   clearUser: () => void;
 }
 
@@ -31,23 +38,27 @@ interface SessionUserStore {
  */
 export const useSessionUserStore = create<SessionUserStore>((set) => ({
   user: null,
+  sessionToken: null,
+  citizenId: null,
   setUser: (user) => set({ user }),
-  clearUser: () => set({ user: null }),
+  setSession: (sessionToken, citizenId) => set({ sessionToken, citizenId }),
+  clearUser: () => set({ user: null, sessionToken: null, citizenId: null }),
 }));
 
 /** Mock cho giai đoạn UI-only (chưa có NFC reader). */
 export const MOCK_USER: SessionUser = {
-  hoTen: 'NGUYỄN VĂN A',
-  ngaySinh: '01/01/2000',
+  hoTen: 'HÀ THÀNH LONG',
+  ngaySinh: '20/12/2003',
   gioiTinh: 'Nam',
   danToc: 'Kinh',
   quocTich: 'Việt Nam',
-  cccd: '001110011111',
+  cccd: '015203001181',
   sdt: '',
   photoSrc: '/assets/user-demo.svg',
+  ngayCap: '02/04/2021',
   thuongTru: {
-    province: 'Thành phố Hà Nội',
-    ward: 'Phường Ba Đình',
-    diaChi: 'Ngọc Khánh',
+    province: 'Tỉnh Lào Cai',
+    ward: 'Xã Xuân Ái',
+    diaChi: 'Thôn Trung Tâm',
   },
 };
