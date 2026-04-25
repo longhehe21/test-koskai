@@ -18,7 +18,7 @@ import {
   procedureFormVersions,
 } from './schema.js';
 
-async function seed() {
+export async function seed() {
   console.log('🌱 Seeding database...');
 
   // 1. Statuses
@@ -333,11 +333,16 @@ async function seed() {
   console.log('✅ Seed complete');
 }
 
-seed()
-  .catch((err) => {
-    console.error('❌ Seed failed:', err);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await sql.end();
-  });
+// CLI entry — chỉ chạy khi gọi trực tiếp `npm run db:seed`, không khi import.
+// Khi import từ server.ts thì caller tự quản lý sql connection.
+const isCliEntry = import.meta.url === `file://${process.argv[1]?.replace(/\\/g, '/')}`;
+if (isCliEntry) {
+  seed()
+    .catch((err) => {
+      console.error('❌ Seed failed:', err);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await sql.end();
+    });
+}

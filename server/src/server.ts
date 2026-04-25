@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { buildApp } from './app.js';
 import { env } from './config/env.js';
 import { runMigrations } from './db/migrate.js';
+import { seed } from './db/seed.js';
 
 async function start() {
   // Auto-migrate trước khi listen — Railway/cloud deploy dễ dàng, không cần
@@ -15,6 +16,19 @@ async function start() {
       // eslint-disable-next-line no-console
       console.error('[migrate] failed:', err);
       process.exit(1);
+    }
+
+    // Auto-seed master data (statuses, services, procedures, form_versions).
+    // Idempotent qua onConflictDoNothing — chạy lại không lỗi.
+    try {
+      await seed();
+      // eslint-disable-next-line no-console
+      console.log('[seed] master data ensured');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[seed] failed:', err);
+      // Không exit — server vẫn start được, BA test các flow không cần seed
+      // sẽ vẫn hoạt động (vd /health). Form submit sẽ fail cho tới khi sửa.
     }
   }
 
