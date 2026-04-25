@@ -2,7 +2,7 @@ FROM node:20-alpine AS base
 WORKDIR /app
 
 # Copy root workspace files
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.json ./
 COPY shared/package.json shared/
 COPY server/package.json server/
 
