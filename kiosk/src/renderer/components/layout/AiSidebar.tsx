@@ -1,38 +1,116 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MuseTalkCanvas } from '@components/musetalk-canvas/MuseTalkCanvas';
-import { VoiceButton } from '@components/voice-button/VoiceButton';
 import { useConversationStore, type MuseTalkStatus } from '@store/conversationStore';
+import type { ConversationState } from '@store/conversationStore';
 import { useAi } from '@renderer/providers/AiProvider';
 
 const STATUS_DOT: Record<MuseTalkStatus, { bg: string; pulse: boolean }> = {
   disconnected: { bg: '#ffb648', pulse: false },
-  connecting: { bg: '#ffb648', pulse: true },
-  connected: { bg: '#3ddc84', pulse: false },
-  error: { bg: '#ff5566', pulse: true },
+  connecting:   { bg: '#ffb648', pulse: true  },
+  connected:    { bg: '#3ddc84', pulse: false },
+  error:        { bg: '#ff5566', pulse: true  },
   unconfigured: { bg: '#9ca3af', pulse: false },
 };
 
 const STATUS_LABEL: Record<MuseTalkStatus, string> = {
   disconnected: 'Chưa kết nối',
-  connecting: 'Đang kết nối MuseTalk…',
-  connected: 'Sẵn sàng',
-  error: 'Lỗi kết nối',
+  connecting:   'Đang kết nối MuseTalk…',
+  connected:    'Sẵn sàng',
+  error:        'Lỗi kết nối',
   unconfigured: 'MuseTalk chưa cấu hình',
 };
 
+// ── Typewriter — chỉ chạy khi active=true ────────────────────────────────────
+const TYPEWRITER_MS = 18;
+
+function TypewriterText({
+  text,
+  active,
+  onComplete,
+}: {
+  text: string;
+  active: boolean;
+  onComplete: () => void;
+}) {
+  const [displayed, setDisplayed] = useState('');
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    if (!active) return;
+    setDisplayed('');
+    if (!text) { onCompleteRef.current(); return; }
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) { clearInterval(id); onCompleteRef.current(); }
+    }, TYPEWRITER_MS);
+    return () => clearInterval(id);
+  }, [active, text]);
+
+  const done = displayed.length >= text.length;
+  // Khi chưa active (chờ audio): hiện trống + cursor — không flash full text
+  // Khi active: hiện dần + cursor cho đến khi xong
+  return (
+    <>
+      {active ? displayed : ''}
+      {(!active || !done) && <span className="ai-typewriter-cursor" aria-hidden="true" />}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function AiSidebar() {
-  const { canvasRef, begin } = useAi();
+  const { canvasRef, begin, retryListening } = useAi();
   const museTalkStatus = useConversationStore((s) => s.museTalkStatus);
-  const state = useConversationStore((s) => s.state);
-  const [active, setActive] = useState(false);
+  const state          = useConversationStore((s) => s.state);
+  const messages       = useConversationStore((s) => s.messages);
+  const error          = useConversationStore((s) => s.error);
+  const audioPlaying   = useConversationStore((s) => s.audioPlaying);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ID của AI message đang typewriter
+  const [streamingId, setStreamingId]     = useState<string | null>(null);
+  const [streamingActive, setStreamingActive] = useState(false);
+  const prevAudioRef = useRef(false);
+  const prevLenRef   = useRef(0);
 
   const dot = STATUS_DOT[museTalkStatus];
 
-  const handleTap = () => {
-    if (museTalkStatus !== 'connected') return;
-    setActive(true);
-    begin();
-  };
+  const begunRef = useRef(false);
+  useEffect(() => {
+    if (museTalkStatus === 'connected' && !begunRef.current) {
+      begunRef.current = true;
+      begin();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [museTalkStatus]);
+
+  // Khi có AI message mới → chuẩn bị streaming (chưa active)
+  useEffect(() => {
+    if (messages.length > prevLenRef.current) {
+      const last = messages[messages.length - 1];
+      if (last.role === 'ai') {
+        setStreamingId(last.id);
+        setStreamingActive(false);
+      }
+      prevLenRef.current = messages.length;
+    }
+  }, [messages]);
+
+  // Khi audio bắt đầu phát → kích hoạt typewriter
+  useEffect(() => {
+    if (audioPlaying && !prevAudioRef.current) {
+      setStreamingActive(true);
+    }
+    prevAudioRef.current = audioPlaying;
+  }, [audioPlaying]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingId]);
 
   return (
     <aside className="kiosk-ai-panel">
@@ -51,8 +129,6 @@ export function AiSidebar() {
             idleVideoUrl="/avatar-idle.mp4"
             className="h-full w-full"
           />
-
-          {/* Sparkles — chỉ hiện khi LISTENING/SPEAKING, absolute inside wrapper */}
           {(state === 'LISTENING' || state === 'SPEAKING') && (
             <div className="ai-panel-sparkles" aria-hidden="true">
               <span className="ai-sparkle ai-sparkle--1" />
@@ -63,62 +139,62 @@ export function AiSidebar() {
               <span className="ai-sparkle ai-sparkle--6" />
             </div>
           )}
-
-          {active && state === 'PROCESSING' && (
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-              style={{ background: 'rgba(8,8,12,0.55)', backdropFilter: 'blur(4px)' }}
-            >
-              <div
-                className="h-9 w-9 animate-spin rounded-full"
-                style={{ border: '3px solid rgba(255,255,255,0.25)', borderTopColor: '#ffffff' }}
-              />
-              <span className="text-sm text-white/80">Đang xử lý…</span>
-            </div>
-          )}
         </div>
 
-        <div className="ai-panel-voice-wrapper">
-          {active ? (
-            <VoiceButton />
-          ) : (
-            <button
-              onClick={handleTap}
-              disabled={museTalkStatus !== 'connected'}
-              className="w-full flex flex-col items-center gap-2 py-3 rounded-[10px] transition-all"
-              style={{
-                background:
-                  museTalkStatus === 'connected'
-                    ? 'rgba(255,255,255,0.2)'
-                    : 'rgba(255,255,255,0.08)',
-                cursor: museTalkStatus === 'connected' ? 'pointer' : 'not-allowed',
-                opacity: museTalkStatus === 'connected' ? 1 : 0.6,
-              }}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="w-7 h-7 text-white"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5"
-                />
-              </svg>
-              <span className="text-sm font-semibold text-white">
-                {museTalkStatus === 'connected'
-                  ? 'Chạm để bắt đầu'
-                  : museTalkStatus === 'unconfigured'
-                    ? 'Chưa cấu hình MuseTalk'
-                    : 'Đang kết nối…'}
-              </span>
+        {error && (
+          <div className="ai-panel-error">
+            <span className="ai-panel-error-text">⚠ {error}</span>
+            <button className="ai-panel-error-retry" onClick={retryListening}>
+              Thử lại
             </button>
+          </div>
+        )}
+
+        <div className="ai-panel-chat-history">
+          {messages.length === 0 ? (
+            <p className="ai-chat-empty-hint">Hãy nói gì đó…</p>
+          ) : (
+            messages.map((msg) => (
+              <div key={msg.id} className={`ai-chat-msg ai-chat-msg--${msg.role}`}>
+                <div className={`ai-chat-bubble ai-chat-bubble--${msg.role}`}>
+                  {msg.role === 'ai' && msg.id === streamingId ? (
+                    <TypewriterText
+                      text={msg.text}
+                      active={streamingActive}
+                      onComplete={() => { setStreamingId(null); setStreamingActive(false); }}
+                    />
+                  ) : (
+                    msg.text
+                  )}
+                </div>
+              </div>
+            ))
           )}
+          <div ref={messagesEndRef} />
         </div>
+
+        <StateBadge state={state} />
       </div>
     </aside>
+  );
+}
+
+const STATE_CONFIG: Record<ConversationState, { label: string; color: string; pulse: boolean }> = {
+  IDLE:       { label: 'Đang chờ…',    color: 'rgba(255,255,255,0.35)', pulse: false },
+  LISTENING:  { label: 'Đang nghe…',   color: '#38bdf8',                pulse: true  },
+  PROCESSING: { label: 'Đang xử lý…', color: '#fbbf24',                pulse: true  },
+  SPEAKING:   { label: 'Đang trả lời…',color: '#a78bfa',                pulse: false },
+};
+
+function StateBadge({ state }: { state: ConversationState }) {
+  const { label, color, pulse } = STATE_CONFIG[state];
+  return (
+    <div className="ai-state-badge">
+      <span
+        className={`ai-state-dot${pulse ? ' ai-state-dot--pulse' : ''}`}
+        style={{ background: color }}
+      />
+      <span className="ai-state-label">{label}</span>
+    </div>
   );
 }

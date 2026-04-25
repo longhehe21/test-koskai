@@ -1,6 +1,8 @@
+import type { MutableRefObject } from 'react';
 import { MicrophoneCapture } from './MicrophoneCapture';
 import { MuseTalkClient, isMuseTalkConfigured, type MuseTalkFrameCallback } from './MuseTalkClient';
 import type { ConversationState } from '@store/conversationStore';
+import type { TranscriptOverride } from '@renderer/providers/AiProvider';
 
 // Env optional — nếu chưa cấu hình, MuseTalk tắt mềm, UI vẫn load bình thường.
 const MUSETALK_URL   = import.meta.env.RENDERER_VITE_MUSETALK_URL as string | undefined;
@@ -58,19 +60,28 @@ export class ConversationController {
   private readonly events:   ConversationEvents;
   private readonly musetalk: MuseTalkClient;
   private readonly configured: boolean;
+  private readonly transcriptOverrideRef: MutableRefObject<TranscriptOverride | null>;
+  private readonly systemPromptRef: MutableRefObject<string | null>;
 
   private audio = new Audio();
   private currentWavUrl: string | null = null;
 
-  // H1: disposed flag — mọi async callback kiểm tra trước khi tiếp tục
   private disposed = false;
-  // begin() chỉ chạy một lần
   private started = false;
-  // tránh double-start listening
   private startingListen = false;
 
-  constructor(events: ConversationEvents) {
+  // Lịch sử hội thoại gửi vào model (role: 'user'|'model', tối đa MAX_HISTORY lượt)
+  private history: Array<{ role: 'user' | 'model'; text: string }> = [];
+  private static readonly MAX_HISTORY = 12;
+
+  constructor(
+    events: ConversationEvents,
+    transcriptOverrideRef: MutableRefObject<TranscriptOverride | null>,
+    systemPromptRef?: MutableRefObject<string | null>,
+  ) {
     this.events = events;
+    this.transcriptOverrideRef = transcriptOverrideRef;
+    this.systemPromptRef = systemPromptRef ?? { current: null };
     this.mic = new MicrophoneCapture();
     this.configured = isMuseTalkConfigured();
 
@@ -123,11 +134,31 @@ export class ConversationController {
   begin(): void {
     if (this.started || this.disposed || !this.configured) return;
     this.started = true;
-    console.log('[CC] begin()');
+    // Greeting vào lịch sử model (role: 'model') để các lượt sau model biết đã chào
+    this.history = [{ role: 'model', text: GREETING_TEXT }];
+    this.events.onResponse(GREETING_TEXT);
     void this.speakThenListen(GREETING_TEXT);
   }
 
   get state(): ConversationState { return this._state; }
+
+  /** Nói một đoạn text bất kỳ (dùng cho greeting khi AI bật chế độ nhập liệu). */
+  speak(text: string): void {
+    if (this.disposed || !this.configured) return;
+    void this.speakThenListen(text);
+  }
+
+  /** Ngắt audio đang phát, bắt đầu lắng nghe ngay lập tức (barge-in). */
+  interruptSpeaking(): void {
+    if (this.disposed || this._state !== 'SPEAKING') return;
+    console.log('[CC] interruptSpeaking()');
+    this.mic.stopBargeInMonitor();
+    this.stopAudio();
+    this.events.onSpeakingDone();
+    this.transition('IDLE');
+    // Không delay — user đang nói ngay lúc này, startListening ngay lập tức
+    void this.startListening();
+  }
 
   dispose(): void {
     // H1: đặt flag trước — tất cả async callbacks sẽ abort
@@ -144,15 +175,38 @@ export class ConversationController {
     if (this._state !== 'IDLE') { console.log(`[CC] startListening skip — state=${this._state}`); return; }
     if (this.startingListen) { console.log('[CC] startListening skip — already starting'); return; }
     this.startingListen = true;
+
+    // Chuyển LISTENING ngay — không đợi mic setup xong để badge hiện liền
+    this.transition('LISTENING');
     console.log('[CC] startListening…');
 
     try {
-      await this.mic.start(() => void this.stopListening());
-      if (this.disposed) return;
-      this.transition('LISTENING');
-      console.log('[CC] LISTENING');
+      await this.mic.start(
+        () => void this.stopListening(),
+        () => void this.handleNoSpeech(),
+      );
     } catch (err) {
       console.error('[CC] mic.start() error:', err);
+      this.handleError('Không thể truy cập microphone', err);
+    } finally {
+      this.startingListen = false;
+    }
+  }
+
+  private async handleNoSpeech(): Promise<void> {
+    if (this.disposed || this._state !== 'LISTENING') return;
+    if (this.startingListen) return;
+    // Restart mic im lặng — GIỮ NGUYÊN state LISTENING, không flicker về IDLE
+    console.log('[CC] no speech → silent mic restart');
+    this.startingListen = true;
+    try {
+      await this.mic.stop();
+      if (this.disposed) return;
+      await this.mic.start(
+        () => void this.stopListening(),
+        () => void this.handleNoSpeech(),
+      );
+    } catch (err) {
       this.handleError('Không thể truy cập microphone', err);
     } finally {
       this.startingListen = false;
@@ -181,11 +235,31 @@ export class ConversationController {
       }
       this.events.onTranscript(transcript);
 
-      // Bước 2: LLM
-      const response = (await window.electronAPI.invoke('llm:chat', {
-        text: transcript,
-      })) as string;
+      // Yield để React flush render user message trước khi gọi LLM
+      await Promise.resolve();
+
+      // Bước 2: LLM hoặc override từ page/orchestrator
+      const override = this.transcriptOverrideRef.current;
+      let response: string;
+      if (override) {
+        response = await override(transcript);
+      } else {
+        response = (await window.electronAPI.invoke('llm:chat', {
+          text: transcript,
+          history: this.history,
+          systemPrompt: this.systemPromptRef.current ?? undefined,
+        })) as string;
+      }
       if (this.disposed) return;
+
+      // Cập nhật history cho lượt tiếp theo
+      this.history.push({ role: 'user', text: transcript });
+      this.history.push({ role: 'model', text: response });
+      // Giữ tối đa MAX_HISTORY lượt (mỗi lượt = 2 entry user+model)
+      if (this.history.length > ConversationController.MAX_HISTORY * 2) {
+        this.history = this.history.slice(-ConversationController.MAX_HISTORY * 2);
+      }
+
       this.events.onResponse(response);
 
       // Bước 3: TTS + phát
@@ -248,11 +322,12 @@ export class ConversationController {
     // Bug fix: onended TRƯỚC khi set src + play() để không bị miss event
     this.audio.onended = () => {
       if (this.disposed) return;
-      console.log('[CC] audio.onended → startListening');
       this.audio.onended = null;
+      this.mic.stopBargeInMonitor();
       this.stopAudio();
       this.events.onSpeakingDone();
       this.transition('IDLE');
+      // Không delay — startListening tự transition LISTENING ngay lập tức
       void this.startListening();
     };
 
@@ -275,6 +350,12 @@ export class ConversationController {
       this.events.onStartSync(() => {
         const wallElapsed = performance.now() - startedAt;
         return Math.max(0, wallElapsed - AUDIO_OUTPUT_LATENCY_MS);
+      });
+      // Barge-in: monitor mic (non-recording) để phát hiện giọng nói chồng lên
+      void this.mic.startBargeInMonitor(() => {
+        if (this.disposed || this._state !== 'SPEAKING') return;
+        console.log('[CC] barge-in detected → interruptSpeaking');
+        this.interruptSpeaking();
       });
     }).catch((err: unknown) => {
       console.error('[CC] audio.play() rejected:', err);

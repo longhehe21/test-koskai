@@ -7,16 +7,21 @@ const CHUNK_INTERVAL_MS  = 250;
 
 /** RMS dưới ngưỡng này được coi là im lặng */
 const SILENCE_THRESHOLD  = 0.008;
-/**
- * Phải im lặng liên tục bao lâu (ms) để trigger onSilenceDetected.
- * 2s: đủ để user ngắt nghỉ giữa câu mà không bị cắt sớm.
- */
+/** Phải im lặng liên tục bao lâu (ms) để trigger onSilenceDetected — chỉ sau khi đã có speech. */
 const SILENCE_DURATION_MS = 2_000;
-/**
- * Thời gian tối thiểu ghi âm trước khi silence detection được kích hoạt.
- * 2s: đủ để mic warm-up và user bắt đầu nói.
- */
+/** Thời gian tối thiểu ghi âm trước khi silence detection được kích hoạt. */
 const MIN_RECORD_MS = 2_000;
+/** RMS phải vượt SILENCE_THRESHOLD liên tục bao lâu để xác nhận "có tiếng nói thật". */
+const SPEECH_MIN_MS = 100;
+/** Cho phép brief dip (ms) dưới threshold mà không reset speech detection — tránh miss short words. */
+const SPEECH_DIP_TOLERANCE_MS = 80;
+/** Nếu sau bao lâu vẫn chưa phát hiện tiếng nói → gọi onNoSpeech (restart im lặng). */
+const NO_SPEECH_TIMEOUT_MS = 8_000;
+
+/** RMS vượt ngưỡng này trong SPEAKING → trigger barge-in */
+const BARGE_IN_THRESHOLD = 0.025;
+/** Phải có voice liên tục bao lâu (ms) để xác nhận barge-in (tránh click/noise) */
+const BARGE_IN_CONFIRM_MS = 180;
 
 export class MicrophoneCapture {
   private stream: MediaStream | null = null;
@@ -26,15 +31,77 @@ export class MicrophoneCapture {
   private stopResolve: ((transcript: string) => void) | null = null;
   private stopReject: ((err: Error) => void) | null = null;
 
-  // VAD
+  // VAD (recording mode)
   private audioCtx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private vadRaf: number | null = null;
   private silenceStart: number | null = null;
   private onSilenceDetected: (() => void) | null = null;
+  private onNoSpeechCallback: (() => void) | null = null;
+
+  // Barge-in monitor (non-recording, listening-only)
+  private bargeInStream: MediaStream | null = null;
+  private bargeInCtx: AudioContext | null = null;
+  private bargeInRaf: number | null = null;
+  private bargeInVoiceStart: number | null = null;
 
   get isRecording(): boolean {
     return this.recording;
+  }
+
+  /** Bắt đầu monitor mic (không record) để phát hiện barge-in khi AI đang nói.
+   *  @param onBargeIn callback khi phát hiện giọng nói đủ dài
+   */
+  async startBargeInMonitor(onBargeIn: () => void): Promise<void> {
+    if (this.bargeInStream) return;
+    try {
+      this.bargeInStream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: 48000 },
+      });
+      this.bargeInCtx = new AudioContext({ sampleRate: 48000 });
+      await this.bargeInCtx.resume();
+      const analyser = this.bargeInCtx.createAnalyser();
+      analyser.fftSize = 512;
+      const source = this.bargeInCtx.createMediaStreamSource(this.bargeInStream);
+      source.connect(analyser);
+      const buffer = new Float32Array(analyser.fftSize);
+      this.bargeInVoiceStart = null;
+
+      const tick = () => {
+        if (!this.bargeInStream) return;
+        analyser.getFloatTimeDomainData(buffer);
+        let sumSq = 0;
+        for (let i = 0; i < buffer.length; i++) sumSq += buffer[i] * buffer[i];
+        const rms = Math.sqrt(sumSq / buffer.length);
+
+        if (rms >= BARGE_IN_THRESHOLD) {
+          if (this.bargeInVoiceStart === null) this.bargeInVoiceStart = performance.now();
+          else if (performance.now() - this.bargeInVoiceStart >= BARGE_IN_CONFIRM_MS) {
+            this.stopBargeInMonitor();
+            onBargeIn();
+            return;
+          }
+        } else {
+          this.bargeInVoiceStart = null;
+        }
+        this.bargeInRaf = requestAnimationFrame(tick);
+      };
+      this.bargeInRaf = requestAnimationFrame(tick);
+    } catch {
+      // Barge-in là tính năng optional — không crash nếu mic không cho phép
+    }
+  }
+
+  stopBargeInMonitor(): void {
+    if (this.bargeInRaf !== null) {
+      cancelAnimationFrame(this.bargeInRaf);
+      this.bargeInRaf = null;
+    }
+    this.bargeInCtx?.close().catch(() => undefined);
+    this.bargeInCtx = null;
+    this.bargeInStream?.getTracks().forEach((t) => t.stop());
+    this.bargeInStream = null;
+    this.bargeInVoiceStart = null;
   }
 
   /**
@@ -42,7 +109,7 @@ export class MicrophoneCapture {
    * @param onSilence Callback khi phát hiện im lặng đủ lâu sau khi có tiếng nói.
    *                  Nếu truyền vào, VAD tự động kích hoạt.
    */
-  async start(onSilence?: () => void): Promise<void> {
+  async start(onSilence?: () => void, onNoSpeech?: () => void): Promise<void> {
     if (this.recording) return;
 
     this.stream = await navigator.mediaDevices.getUserMedia({
@@ -78,6 +145,7 @@ export class MicrophoneCapture {
 
     if (onSilence) {
       this.onSilenceDetected = onSilence;
+      this.onNoSpeechCallback = onNoSpeech ?? null;
       this.startVAD();
     }
   }
@@ -106,6 +174,7 @@ export class MicrophoneCapture {
 
   dispose(): void {
     this.stopVAD();
+    this.stopBargeInMonitor();
     if (this.maxTimer) clearTimeout(this.maxTimer);
     if (this.recording) {
       this.recording = false;
@@ -132,6 +201,10 @@ export class MicrophoneCapture {
     // firstSampleAt: thời điểm nhận được sample thực đầu tiên (khác 0).
     // Dùng thay cho startTime để tránh mic warm-up (~400ms) ăn vào MIN_RECORD_MS.
     let firstSampleAt: number | null = null;
+    // speechDetected: chỉ bắt đầu đếm silence sau khi xác nhận có tiếng nói thật.
+    let speechDetected = false;
+    let speechStart: number | null = null;
+    let dipStart: number | null = null; // brief dip tolerance — không reset ngay khi 1 frame lặng
 
     const tick = () => {
       if (!this.analyser || !this.recording) return;
@@ -142,7 +215,6 @@ export class MicrophoneCapture {
       for (let i = 0; i < buffer.length; i++) sumSq += buffer[i] * buffer[i];
       const rms = Math.sqrt(sumSq / buffer.length);
 
-      // Detect khi mic bắt đầu gửi sample thực (không phải silence từ warm-up)
       if (firstSampleAt === null && rms > 0.0001) {
         firstSampleAt = performance.now();
       }
@@ -152,23 +224,47 @@ export class MicrophoneCapture {
         : performance.now() - startTime;
 
       if (elapsed < MIN_RECORD_MS) {
-        // Chờ tối thiểu trước khi bắt đầu detect silence
         this.vadRaf = requestAnimationFrame(tick);
         return;
       }
 
       if (rms >= SILENCE_THRESHOLD) {
-        // Có tiếng — reset silence timer
+        dipStart = null; // voice resumed — reset dip timer
+        if (!speechDetected) {
+          if (speechStart === null) speechStart = performance.now();
+          else if (performance.now() - speechStart >= SPEECH_MIN_MS) speechDetected = true;
+        }
         this.silenceStart = null;
       } else {
-        // Im lặng
-        if (this.silenceStart === null) {
-          this.silenceStart = performance.now();
-        } else if (performance.now() - this.silenceStart >= SILENCE_DURATION_MS) {
-          const cb = this.onSilenceDetected;
-          this.stopVAD();
-          cb?.();
-          return;
+        // Brief dip: chỉ reset speechStart sau SPEECH_DIP_TOLERANCE_MS liên tục lặng
+        if (!speechDetected) {
+          if (dipStart === null) dipStart = performance.now();
+          else if (performance.now() - dipStart >= SPEECH_DIP_TOLERANCE_MS) {
+            speechStart = null; // dip đủ lâu → reset
+            dipStart = null;
+          }
+        } else {
+          dipStart = null; // speech đã confirmed, không cần dip tolerance nữa
+        }
+
+        if (!speechDetected) {
+          // Chưa nghe thấy tiếng nói — kiểm tra no-speech timeout
+          if (elapsed >= NO_SPEECH_TIMEOUT_MS) {
+            const cb = this.onNoSpeechCallback;
+            this.stopVAD();
+            cb?.();
+            return;
+          }
+        } else {
+          // Đã có speech, giờ đếm silence
+          if (this.silenceStart === null) {
+            this.silenceStart = performance.now();
+          } else if (performance.now() - this.silenceStart >= SILENCE_DURATION_MS) {
+            const cb = this.onSilenceDetected;
+            this.stopVAD();
+            cb?.();
+            return;
+          }
         }
       }
 
@@ -180,6 +276,7 @@ export class MicrophoneCapture {
 
   private stopVAD(): void {
     this.onSilenceDetected = null;
+    this.onNoSpeechCallback = null;
     if (this.vadRaf !== null) {
       cancelAnimationFrame(this.vadRaf);
       this.vadRaf = null;

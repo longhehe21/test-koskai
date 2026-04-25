@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { useAiNavigator } from '@hooks/useAiNavigator';
 
 type CaseId = 'theo-danh-sach' | 'nhan-khau-ho';
 
@@ -50,6 +51,23 @@ export default function TamTruTruongHopPage() {
   const [advancing, setAdvancing] = useState(false);
 
   usePageHeader({ title: 'Tạm trú' });
+
+  useAiNavigator({
+    options: [
+      {
+        id: 'theo-danh-sach',
+        label: 'Đăng ký theo danh sách',
+        keywords: ['danh sách', 'danh sach', 'nhóm', 'nhiều người', 'ký túc', 'cơ sở lưu trú'],
+      },
+      {
+        id: 'nhan-khau-ho',
+        label: 'Nhân khẩu hộ',
+        keywords: ['nhân khẩu', 'nhan khau', 'hộ gia đình', 'cá nhân', 'nhà riêng', 'thuê', 'mượn'],
+      },
+    ],
+    greeting: 'Anh thuộc trường hợp nào ạ? Đăng ký theo danh sách hay nhân khẩu hộ?',
+    onSelect: (id) => handleCardClick(id as CaseId),
+  });
 
   const handleCardClick = (id: CaseId) => {
     if (advancing) return;

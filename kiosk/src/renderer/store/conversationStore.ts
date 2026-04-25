@@ -23,6 +23,8 @@ interface ConversationStore {
   museTalkStatus: MuseTalkStatus;
   messages: ChatMessage[];
   currentRoute: string;
+  /** true khi audio TTS thực sự bắt đầu phát — dùng để trigger typewriter */
+  audioPlaying: boolean;
 
   setState: (state: ConversationState) => void;
   setTranscript: (text: string) => void;
@@ -32,6 +34,7 @@ interface ConversationStore {
   appendMessage: (msg: Omit<ChatMessage, 'id' | 'ts'>) => void;
   clearMessages: () => void;
   setCurrentRoute: (route: string) => void;
+  setAudioPlaying: (v: boolean) => void;
   reset: () => void;
 }
 
@@ -46,6 +49,7 @@ export const useConversationStore = create<ConversationStore>((set) => ({
   museTalkStatus: 'disconnected',
   messages: [],
   currentRoute: '/',
+  audioPlaying: false,
 
   setState: (state) => set({ state }),
   setTranscript: (transcript) => set({ transcript, error: null }),
@@ -56,7 +60,8 @@ export const useConversationStore = create<ConversationStore>((set) => ({
     set((s) => ({
       messages: [...s.messages, { id: nextMessageId(), ts: Date.now(), ...msg }],
     })),
-  clearMessages: () => set({ messages: [] }),
+  clearMessages: () => set({ messages: [], audioPlaying: false }),
   setCurrentRoute: (currentRoute) => set({ currentRoute }),
+  setAudioPlaying: (audioPlaying) => set({ audioPlaying }),
   reset: () => set({ state: 'IDLE', transcript: '', response: '', error: null }),
 }));

@@ -1,4 +1,5 @@
 export { Modal } from './Modal';
+export { AiInputButton } from './AiInputButton';
 export { FormFooter } from './FormFooter';
 export { Dropdown, type DropdownItem } from './Dropdown';
 export { DatePicker } from './DatePicker';

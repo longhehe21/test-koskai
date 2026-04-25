@@ -436,3 +436,23 @@ table[data-vk-table] tbody tr:only-child .thtt-del-btn {
   opacity: 0.7;
   pointer-events: none;
 }
+
+
+/* AI fallback highlight — khi field cần nhập tay sau 2 lần AI thất bại */
+.tkbtv-input--ai-focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+  animation: ai-focus-pulse 1.4s ease-in-out 2;
+}
+
+.tkbtv-field--ai-focus {
+  border-radius: 8px;
+  outline: 2px solid #f59e0b;
+  outline-offset: 4px;
+  animation: ai-focus-pulse 1.4s ease-in-out 2;
+}
+
+@keyframes ai-focus-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.10); }
+}

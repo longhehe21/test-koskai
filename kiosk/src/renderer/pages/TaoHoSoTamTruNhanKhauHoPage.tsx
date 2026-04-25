@@ -10,9 +10,12 @@ import { getTamTruMissingDocs, getTamTruScanRoute } from '@utils/validateAttachm
 import { useDraftLifecycle } from '@hooks/useDraftLifecycle';
 import { DraftResumeGate } from '@components/DraftResumeGate';
 import { useDraftFormStore } from '@store/draftFormStore';
+import { useSessionUserStore, MOCK_CCCD } from '@store/sessionUserStore';
+import { useFormAiOrchestrator } from '@hooks/useFormAiOrchestrator';
 
 const PROCEDURE_CODE = 'tam-tru';
 import {
+  AiInputButton,
   ConfirmSubmitModal,
   SubmitBlockedModal,
   UnsavedChangesModal,
@@ -132,6 +135,10 @@ function TaoHoSoTamTruNhanKhauHoForm() {
   const c7 = (cachedForm.section7 ?? {}) as Record<string, unknown>;
   const c8 = (cachedForm.section8 ?? {}) as Record<string, unknown>;
   const c9 = (cachedForm.section9 ?? {}) as Record<string, unknown>;
+
+  // ── CCCD prefill + AI store ─────────────────────────────────────────────
+  const cccdData = useSessionUserStore((s) => s.cccdData) ?? MOCK_CCCD;
+  const [aiActive, setAiActive] = useState(false);
 
   // Section I
   const [s1Province, setS1Province] = useState<DropdownItem | null>(
@@ -290,6 +297,57 @@ function TaoHoSoTamTruNhanKhauHoForm() {
   };
   const { guard, proceed, cancel, isPrompting } = useUnsavedChangesGuard(isDirty);
 
+  const [fallbackFieldKey, setFallbackFieldKey] = useState<string | null>(null);
+
+  // F3.1: Khi AI không nghe được 2 lần → scroll đến field và focus để VK hiện
+  useEffect(() => {
+    if (!fallbackFieldKey) return;
+    const el = document.querySelector<HTMLElement>(`[data-ai-field="${fallbackFieldKey}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => el.focus(), 350);
+  }, [fallbackFieldKey]);
+
+  // ── Prefill từ CCCD khi vào trang + thiết lập persona ──────────────────
+  useEffect(() => {
+    // Section III prefill (chỉ khi người khai = chính mình)
+    setDdHoTen(cccdData.hoTen);
+    setDdNgaySinh(cccdData.ngaySinh);
+    setDdGioiTinh(GIOI_TINH_ITEMS.find((g) => g.name === cccdData.gioiTinh) ?? null);
+    setDdCccd(cccdData.soCCCD);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── AI Orchestrator — field setters map ────────────────────────────────
+  const aiFieldSetters: Record<string, (v: string) => void> = {
+    s1Sdt: setS1Sdt,
+    ddSdt: setDdSdt,
+    ddEmail: setDdEmail,
+    chuHoHoTen: setChuHoHoTen,
+    chuHoCccd: setChuHoCccd,
+    chuHoQuanHe: (v) =>
+      setChuHoQuanHe(QUAN_HE_ITEMS.find((q) => q.name === v) ?? { code: 'khac', name: v }),
+    thoiHanTamTru: setThoiHanTamTru,
+  };
+
+  const AI_FIELDS = [
+    { key: 's1Sdt',       label: 'Số điện thoại liên lạc nơi tiếp nhận', type: 'phone' as const },
+    { key: 'ddSdt',       label: 'Số điện thoại người đề nghị',          type: 'phone' as const },
+    { key: 'ddEmail',     label: 'Email người đề nghị',                   type: 'text'  as const },
+    { key: 'chuHoHoTen',  label: 'Họ tên chủ hộ nơi tạm trú',           type: 'text'  as const },
+    { key: 'chuHoCccd',   label: 'Số CCCD của chủ hộ',                   type: 'text'  as const, hint: '12 chữ số' },
+    { key: 'chuHoQuanHe', label: 'Quan hệ với chủ hộ',                   type: 'enum'  as const,
+      enumValues: ['Bố/Mẹ', 'Vợ/Chồng', 'Con', 'Anh/Chị/Em', 'Khác'] },
+    { key: 'thoiHanTamTru', label: 'Thời hạn tạm trú đến ngày',         type: 'date'  as const, hint: 'dd/mm/yyyy' },
+  ];
+
+  useFormAiOrchestrator({
+    fields: AI_FIELDS,
+    setters: aiFieldSetters,
+    active: aiActive,
+    onFallbackKeyboard: setFallbackFieldKey,
+  });
+
   // Section I — auto-fill cơ quan theo ward
   const handleS1Ward = (item: DropdownItem) => {
     setS1Ward(item);
@@ -398,10 +456,11 @@ function TaoHoSoTamTruNhanKhauHoForm() {
                   <label className="tkbtv-label">Số điện thoại liên hệ</label>
                   <input
                     type="text"
-                    className="tkbtv-input"
+                    className={`tkbtv-input${fallbackFieldKey === 's1Sdt' ? ' tkbtv-input--ai-focus' : ''}`}
                     placeholder="Số điện thoại"
                     value={s1Sdt}
                     onChange={(e) => setS1Sdt(e.target.value)}
+                    data-ai-field="s1Sdt"
                   />
                 </div>
               </div>
@@ -533,18 +592,20 @@ function TaoHoSoTamTruNhanKhauHoForm() {
                   </label>
                   <input
                     type="text"
-                    className="tkbtv-input"
+                    className={`tkbtv-input${fallbackFieldKey === 'ddSdt' ? ' tkbtv-input--ai-focus' : ''}`}
                     value={ddSdt}
                     onChange={(e) => setDdSdt(e.target.value)}
+                    data-ai-field="ddSdt"
                   />
                 </div>
                 <div className="tkbtv-field">
                   <label className="tkbtv-label">Email</label>
                   <input
                     type="email"
-                    className="tkbtv-input"
+                    className={`tkbtv-input${fallbackFieldKey === 'ddEmail' ? ' tkbtv-input--ai-focus' : ''}`}
                     value={ddEmail}
                     onChange={(e) => setDdEmail(e.target.value)}
+                    data-ai-field="ddEmail"
                   />
                 </div>
               </div>
@@ -587,9 +648,10 @@ function TaoHoSoTamTruNhanKhauHoForm() {
                   </label>
                   <input
                     type="text"
-                    className="tkbtv-input"
+                    className={`tkbtv-input${fallbackFieldKey === 'chuHoHoTen' ? ' tkbtv-input--ai-focus' : ''}`}
                     value={chuHoHoTen}
                     onChange={(e) => setChuHoHoTen(e.target.value)}
+                    data-ai-field="chuHoHoTen"
                   />
                 </div>
                 <div className="tkbtv-field">
@@ -609,9 +671,10 @@ function TaoHoSoTamTruNhanKhauHoForm() {
                   </label>
                   <input
                     type="text"
-                    className="tkbtv-input"
+                    className={`tkbtv-input${fallbackFieldKey === 'chuHoCccd' ? ' tkbtv-input--ai-focus' : ''}`}
                     value={chuHoCccd}
                     onChange={(e) => setChuHoCccd(e.target.value)}
+                    data-ai-field="chuHoCccd"
                   />
                 </div>
               </div>
@@ -626,7 +689,10 @@ function TaoHoSoTamTruNhanKhauHoForm() {
                   onChange={(e) => setNoiDungDeNghi(e.target.value)}
                 />
               </div>
-              <div className="tkbtv-field tkbtv-field--half">
+              <div
+                className={`tkbtv-field tkbtv-field--half${fallbackFieldKey === 'thoiHanTamTru' ? ' tkbtv-field--ai-focus' : ''}`}
+                data-ai-field="thoiHanTamTru"
+              >
                 <label className="tkbtv-label">
                   Thời hạn tạm trú đề nghị đến ngày <span className="tkbtv-req">*</span>
                 </label>
@@ -1050,6 +1116,13 @@ function TaoHoSoTamTruNhanKhauHoForm() {
           onDraft={() => void handleSaveDraft()}
           onSubmit={handleSubmit}
           submitEnabled={committed}
+          aiButton={
+            <AiInputButton
+              active={aiActive}
+              onToggle={() => setAiActive((v) => !v)}
+              totalFields={AI_FIELDS.length}
+            />
+          }
         />
       </div>
 

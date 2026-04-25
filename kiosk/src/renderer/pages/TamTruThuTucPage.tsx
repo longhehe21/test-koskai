@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { useAiNavigator } from '@hooks/useAiNavigator';
 
 type ThuTucId = 'dang-ky' | 'gia-han' | 'xoa-dang-ky';
 
@@ -59,6 +60,16 @@ export default function TamTruThuTucPage() {
   const [advancing, setAdvancing] = useState(false);
 
   usePageHeader({ title: 'Tạm trú' });
+
+  useAiNavigator({
+    options: [
+      { id: 'dang-ky',    label: 'Đăng ký tạm trú',     keywords: ['đăng ký', 'đăng ki', 'đăng kí', 'mới'] },
+      { id: 'gia-han',    label: 'Gia hạn tạm trú',      keywords: ['gia hạn', 'gia han', 'hạn', 'gia hận'] },
+      { id: 'xoa-dang-ky', label: 'Xóa đăng ký tạm trú', keywords: ['xóa', 'xoa', 'hủy', 'huy', 'xoá'] },
+    ],
+    greeting: 'Anh muốn thực hiện thủ tục gì ạ? Đăng ký mới, gia hạn, hay xóa đăng ký tạm trú?',
+    onSelect: (id) => handleCardClick(id as ThuTucId),
+  });
 
   const handleCardClick = (id: ThuTucId) => {
     if (advancing) return;

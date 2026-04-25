@@ -6,6 +6,7 @@ import { FlowStepper } from './FlowStepper';
 import { IdleWarningModal } from '@components/ui';
 import { useIdleTimer } from '@hooks/useIdleTimer';
 import { useGlobalClickSound } from '@hooks/useGlobalClickSound';
+import { useGlobalAiNavigator } from '@hooks/useGlobalAiNavigator';
 import { purgeSession } from '@utils/purgeSession';
 import { hideVirtualKeyboard } from '@utils/keyboardControl';
 import { useScanStore } from '@store/scanStore';
@@ -31,8 +32,8 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Global tick sound cho mọi click button — kiosk touch cần tactile feedback.
   useGlobalClickSound();
+  useGlobalAiNavigator(); // global navigation + per-screen scenario cho LLM
 
   const isIdleEnabled = !IDLE_EXEMPT_ROUTES.has(location.pathname);
 

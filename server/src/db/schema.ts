@@ -10,9 +10,11 @@
  *  - File blobs trong MinIO được mã hoá AES-256-GCM
  */
 
+import { sql } from 'drizzle-orm';
 import {
   bigserial,
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -62,6 +64,7 @@ export const kiosks = pgTable(
   (t) => ({
     statusIdx: index('kiosks_status_idx').on(t.status),
     lastOnlineIdx: index('kiosks_last_online_idx').on(t.lastOnlineAt),
+    statusCheck: check('kiosks_status_check', sql`${t.status} IN ('online', 'offline', 'maintenance', 'error')`),
   }),
 );
 
@@ -154,10 +157,11 @@ export const sessions = pgTable(
     citizenIdx: index('sessions_citizen_idx').on(t.citizenId),
     snapshotIdx: index('sessions_snapshot_idx').on(t.snapshotId),
     startedAtIdx: index('sessions_started_at_idx').on(t.startedAt),
-    kioskStartedIdx: index('sessions_kiosk_started_idx').on(
-      t.kioskId,
-      t.startedAt,
-    ),
+    kioskStartedIdx: index('sessions_kiosk_started_idx').on(t.kioskId, t.startedAt),
+    // L4: partial index cho query "active sessions" trên dashboard
+    activeSessionsIdx: index('sessions_active_idx').on(t.startedAt).where(sql`${t.endedAt} IS NULL`),
+    loginMethodCheck: check('sessions_login_method_check', sql`${t.loginMethod} IN ('cccd_nfc', 'vneid', 'qr', 'guest')`),
+    endedReasonCheck: check('sessions_ended_reason_check', sql`${t.endedReason} IS NULL OR ${t.endedReason} IN ('user_exit', 'idle_timeout', 'logout', 'error')`),
   }),
 );
 
@@ -347,14 +351,21 @@ export const applications = pgTable(
     statusIdx: index('applications_status_idx').on(t.statusId),
     citizenIdx: index('applications_citizen_idx').on(t.citizenId),
     snapshotIdx: index('applications_snapshot_idx').on(t.snapshotId),
-    draftExpiresIdx: index('applications_draft_expires_idx').on(
-      t.draftExpiresAt,
-    ),
-    statusSubmittedIdx: index('applications_status_submitted_idx').on(
-      t.statusId,
-      t.submittedAt,
-    ),
+    draftExpiresIdx: index('applications_draft_expires_idx').on(t.draftExpiresAt),
+    statusSubmittedIdx: index('applications_status_submitted_idx').on(t.statusId, t.submittedAt),
     submittedAtIdx: index('applications_submitted_at_idx').on(t.submittedAt),
+    // H1: idempotency check khi createDraft
+    draftIdempotencyIdx: index('applications_draft_idempotency_idx')
+      .on(t.sessionId, t.procedureId)
+      .where(sql`${t.submittedAt} IS NULL AND ${t.deletedAt} IS NULL`),
+    // H5: dashboard query theo status trên hồ sơ chưa xóa
+    activeStatusIdx: index('applications_active_status_idx')
+      .on(t.statusId, t.createdAt)
+      .where(sql`${t.deletedAt} IS NULL`),
+    // M4: listByCitizen sort theo createdAt
+    citizenCreatedIdx: index('applications_citizen_created_idx')
+      .on(t.citizenId, t.createdAt)
+      .where(sql`${t.deletedAt} IS NULL`),
   }),
 );
 
@@ -414,10 +425,10 @@ export const applicationStatusLogs = pgTable(
   },
   (t) => ({
     applicationIdx: index('status_logs_application_idx').on(t.applicationId),
-    appChangedIdx: index('status_logs_app_changed_idx').on(
-      t.applicationId,
-      t.changedAt,
-    ),
+    appChangedIdx: index('status_logs_app_changed_idx').on(t.applicationId, t.changedAt),
+    // H6: FK columns cần index để JOIN nhanh
+    toStatusIdx: index('status_logs_to_status_idx').on(t.toStatusId),
+    fromStatusIdx: index('status_logs_from_status_idx').on(t.fromStatusId),
   }),
 );
 
@@ -571,10 +582,9 @@ export const feedbacks = pgTable(
   (t) => ({
     applicationIdx: index('feedbacks_application_idx').on(t.applicationId),
     sessionIdx: index('feedbacks_session_idx').on(t.sessionId),
-    typeCreatedIdx: index('feedbacks_type_created_idx').on(
-      t.feedbackType,
-      t.createdAt,
-    ),
+    typeCreatedIdx: index('feedbacks_type_created_idx').on(t.feedbackType, t.createdAt),
+    // M2: chặn điểm không hợp lệ
+    ratingCheck: check('feedbacks_rating_score_check', sql`${t.ratingScore} BETWEEN 1 AND 5`),
   }),
 );
 
@@ -597,19 +607,12 @@ export const auditLogs = pgTable(
     occurredAt: timestamp('occurred_at').notNull().defaultNow(),
   },
   (t) => ({
-    kioskOccurredIdx: index('audit_logs_kiosk_occurred_idx').on(
-      t.kioskId,
-      t.occurredAt,
-    ),
-    sessionOccurredIdx: index('audit_logs_session_occurred_idx').on(
-      t.sessionId,
-      t.occurredAt,
-    ),
-    eventOccurredIdx: index('audit_logs_event_occurred_idx').on(
-      t.eventType,
-      t.occurredAt,
-    ),
+    kioskOccurredIdx: index('audit_logs_kiosk_occurred_idx').on(t.kioskId, t.occurredAt),
+    sessionOccurredIdx: index('audit_logs_session_occurred_idx').on(t.sessionId, t.occurredAt),
+    eventOccurredIdx: index('audit_logs_event_occurred_idx').on(t.eventType, t.occurredAt),
     occurredAtIdx: index('audit_logs_occurred_at_idx').on(t.occurredAt),
+    // L5: chặn severity không hợp lệ
+    severityCheck: check('audit_logs_severity_check', sql`${t.eventSeverity} IN ('debug', 'info', 'warn', 'error', 'critical')`),
   }),
 );
 
@@ -619,7 +622,7 @@ export const auditLogs = pgTable(
 export const purgeJobLogs = pgTable(
   'purge_job_logs',
   {
-    id: serial('id').primaryKey(),
+    id: bigserial('id', { mode: 'number' }).primaryKey(), // H7: bigserial tránh overflow khi cron chạy nhiều năm
     jobName: varchar('job_name', { length: 50 }).notNull(), // purge_snapshots | purge_draft_apps | purge_draft_files
     startedAt: timestamp('started_at').notNull(),
     completedAt: timestamp('completed_at'),
@@ -628,5 +631,50 @@ export const purgeJobLogs = pgTable(
   },
   (t) => ({
     jobStartedIdx: index('purge_logs_job_started_idx').on(t.jobName, t.startedAt),
+  }),
+);
+
+// =========================================================
+// 20. kiosk_hardware_events — M5: track lỗi phần cứng theo cấu kiện
+// =========================================================
+export const kioskHardwareEvents = pgTable(
+  'kiosk_hardware_events',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    kioskId: integer('kiosk_id')
+      .notNull()
+      .references(() => kiosks.id, { onDelete: 'cascade' }),
+    component: varchar('component', { length: 30 }).notNull(), // nfc_reader | scanner | printer | camera | qr_reader
+    eventType: varchar('event_type', { length: 30 }).notNull(), // error | warning | recovery | status_change
+    severity: varchar('severity', { length: 10 }).notNull().default('info'),
+    detailJson: jsonb('detail_json'),
+    occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    kioskOccurredIdx: index('hw_events_kiosk_occurred_idx').on(t.kioskId, t.occurredAt),
+    componentIdx: index('hw_events_component_idx').on(t.component, t.eventType),
+    componentCheck: check('hw_events_component_check', sql`${t.component} IN ('nfc_reader', 'scanner', 'printer', 'camera', 'qr_reader', 'rfid_reader', 'microphone', 'speaker')`),
+    severityCheck: check('hw_events_severity_check', sql`${t.severity} IN ('debug', 'info', 'warn', 'error', 'critical')`),
+  }),
+);
+
+// =========================================================
+// 21. notification_templates — M6: template SMS/Email/Zalo không hardcode trong code
+// =========================================================
+export const notificationTemplates = pgTable(
+  'notification_templates',
+  {
+    id: serial('id').primaryKey(),
+    code: varchar('code', { length: 50 }).notNull().unique(), // e.g. 'application_submitted', 'application_approved'
+    channel: varchar('channel', { length: 20 }).notNull(), // email | sms | zalo | vneid_inbox
+    subjectTemplate: text('subject_template'), // cho email
+    bodyTemplate: text('body_template').notNull(), // {{trackingCode}}, {{procedureName}}...
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    codeChannelIdx: uniqueIndex('notif_templates_code_channel_idx').on(t.code, t.channel),
+    channelCheck: check('notif_templates_channel_check', sql`${t.channel} IN ('email', 'sms', 'zalo', 'vneid_inbox')`),
   }),
 );
