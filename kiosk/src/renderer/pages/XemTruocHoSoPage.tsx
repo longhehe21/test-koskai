@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { useHoKhauFlowStore } from '@store/hoKhauFlowStore';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { useTamVangFlowStore } from '@store/tamVangFlowStore';
 import { useScanStore } from '@store/scanStore';
 import { sound } from '@services/soundService';
 import { hydrateScansFromServer } from '@services/applicationService';
@@ -56,18 +57,6 @@ const BRANCHES_WITH_Q3 = new Set([
 ]);
 
 const STATIC_CONFIGS: Record<string, PreviewConfig> = {
-  '/xem-truoc-tam-vang': {
-    docImage: '/assets/mauct03khaibaotamvang.svg',
-    pages: [
-      { label: 'Trang 1', image: '/assets/mauct03khaibaotamvang.svg' },
-      { label: 'Trang 2', image: '/assets/mauct03khaibaotamvang.svg' },
-      { label: 'Trang 3', image: '/assets/mauct03khaibaotamvang.svg' },
-    ],
-    filename: 'MauCT03.docx',
-    pageTitle: 'Xem trước hồ sơ – Tạm vắng',
-    nextRoute: '/tao-khai-bao-tam-vang',
-    docBodyHTML: CT03_BODY,
-  },
   '/xem-truoc-luu-tru': {
     docImage: '/assets/mau-luu-tru.svg',
     pages: [
@@ -216,6 +205,50 @@ function buildTamTruCfg(variant: TamTruPreviewVariant): PreviewConfig {
   };
 }
 
+/**
+ * Tạm vắng — preview pages dynamic theo HSDK answers ở XacDinhDoiTuongPage.
+ *  - CT03 (Phiếu khai báo tạm vắng) — render bằng docx mammoth (ct03-to-khai.docx)
+ *  - Văn bản đồng ý — render OCR view
+ *
+ * Chỉ show trang user đã tick "Đã có" để khớp với scan page (pages list đồng bộ).
+ * Fallback hiển thị đủ khi store rỗng (direct URL access).
+ */
+function buildTamVangCfg(): PreviewConfig {
+  const flow = useTamVangFlowStore.getState();
+  const hasCt03 = flow.hsdkCt03 !== '0';
+  const hasVanBan = flow.hsdkVanBan !== '0';
+
+  const ct03Page: PreviewPage = {
+    label: 'Phiếu khai báo tạm vắng (CT03)',
+    image: '/assets/mauct03khaibaotamvang.svg',
+    docBodyHTML: CT03_BODY,
+  };
+  const vanBanPage: PreviewPage = {
+    label: 'Văn bản đồng ý cơ quan giám sát',
+    image: '/assets/giấy chứng nhận quyền sử dụng đất.svg',
+    ocrHTML: QSDD_OCR_HTML,
+  };
+
+  const storeEmpty = flow.hsdkCt03 === null && flow.hsdkVanBan === null;
+  const pages: PreviewPage[] = storeEmpty
+    ? [ct03Page, vanBanPage]
+    : [
+        ...(hasCt03 ? [ct03Page] : []),
+        ...(hasVanBan ? [vanBanPage] : []),
+      ];
+
+  return {
+    docImage: pages[0]?.image ?? ct03Page.image,
+    docBodyHTML: CT03_BODY,
+    // File nguồn trong public/assets — Task 1 đã copy "Mẫu tạm vắng CT03.docx"
+    docxUrl: '/assets/ct03-to-khai.docx',
+    filename: 'MauCT03.docx',
+    pageTitle: 'Xem trước hồ sơ – Tạm vắng',
+    nextRoute: '/tao-khai-bao-tam-vang',
+    pages: pages.length ? pages : [ct03Page, vanBanPage],
+  };
+}
+
 function buildHoKhauCfg(): PreviewConfig {
   const flow = useHoKhauFlowStore.getState();
   const hasForm = flow.hsdkTc01 !== '0';
@@ -305,7 +338,7 @@ function buildHoKhauCfg(): PreviewConfig {
   return {
     docImage: pages[0]?.image ?? frontImage,
     docBodyHTML: isNuocNgoai ? CT02_BODY : CT01_BODY,
-    docxUrl: isNuocNgoai ? undefined : '/assets/ct01-to-khai.docx',
+    docxUrl: isNuocNgoai ? '/assets/ct02-to-khai.docx' : '/assets/ct01-to-khai.docx',
     filename: isNuocNgoai ? 'MauCT02.docx' : 'MauCT01.docx',
     pageTitle: 'Xem trước hồ sơ – Hộ khẩu',
     nextRoute: '/tao-ho-so-thuong-tru',
@@ -327,7 +360,8 @@ export default function XemTruocHoSoPage() {
     if (location.pathname === '/xem-truoc-gia-han') return buildTamTruCfg('gia-han-ca-nhan');
     if (location.pathname === '/xem-truoc-gia-han-danh-sach') return buildTamTruCfg('gia-han-danh-sach');
     if (location.pathname === '/xem-truoc-xoa-dang-ky') return buildTamTruCfg('xoa-dang-ky');
-    return STATIC_CONFIGS[location.pathname] ?? STATIC_CONFIGS['/xem-truoc-tam-vang'];
+    if (location.pathname === '/xem-truoc-tam-vang') return buildTamVangCfg();
+    return STATIC_CONFIGS[location.pathname] ?? STATIC_CONFIGS['/xem-truoc-luu-tru'];
   }, [location.pathname]);
 
   usePageHeader({ title: cfg.pageTitle });

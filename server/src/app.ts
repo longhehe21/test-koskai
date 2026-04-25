@@ -10,6 +10,7 @@ import scanRoute from './routes/scan.route.js';
 import sessionRoute from './routes/session.route.js';
 import applicationRoute from './routes/application.route.js';
 import documentRoute from './routes/document.route.js';
+import publicRoute from './routes/public.route.js';
 import authPlugin from './plugins/auth.js';
 
 export async function buildApp() {
@@ -49,6 +50,7 @@ export async function buildApp() {
   await fastify.register(sessionRoute);
   await fastify.register(applicationRoute);
   await fastify.register(documentRoute);
+  await fastify.register(publicRoute);
 
   return fastify;
 }

@@ -21,9 +21,11 @@ import {
   FormFooter,
   MultiSelect,
   ProvinceWardSelect,
+  SubmitBlockedModal,
   UnsavedChangesModal,
   type DropdownItem,
 } from '@components/ui';
+import { getHoKhauMissingDocs, HO_KHAU_SCAN_ROUTE } from '@utils/validateAttachments';
 import { sound } from '@services/soundService';
 import { Section3VN } from './tao-ho-so-thuong-tru/Section3VN';
 import { Section3VK } from './tao-ho-so-thuong-tru/Section3VK';
@@ -278,6 +280,9 @@ function TaoHoSoThuongTruForm() {
   const [showDraft, setShowDraft] = useState(false);
   const [draftTrackingCode, setDraftTrackingCode] = useState<string | null>(null);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  // Tên giấy tờ user đã tick "Chưa có" ở HoSoDinhKemModal (trừ mẫu đơn CT01/CT02).
+  // Nếu list không rỗng → chặn nộp, yêu cầu bổ sung.
+  const [missingDocs, setMissingDocs] = useState<string[]>([]);
 
   // Dirty tracking: true khi user focus vào field bất kỳ lần đầu.
   // onFocusCapture bắt event từ mọi input/textarea/button con.
@@ -385,23 +390,30 @@ function TaoHoSoThuongTruForm() {
     );
   };
 
+  /**
+   * Core save: persist formData + upload scans, return appId. KHÔNG show toast
+   * → caller (handleSaveDraft / onGoBack) tự quyết UX. Dùng chung để tránh
+   * duplicate.
+   */
+  const persistDraftSilent = async (): Promise<number | null> => {
+    const formData = buildFormData();
+    setForm(PROCEDURE_CODE, formData);
+    const existingAppId = getAppId(PROCEDURE_CODE);
+    const { appId, trackingCode } = await createOrUpdateDraft(
+      PROCEDURE_CODE,
+      formData,
+      existingAppId,
+    );
+    setAppId(PROCEDURE_CODE, appId);
+    await uploadPendingScans(appId);
+    setDraftTrackingCode(trackingCode || null);
+    setIsDirty(false);
+    return appId;
+  };
+
   const handleSaveDraft = async () => {
     try {
-      const formData = buildFormData();
-      setForm(PROCEDURE_CODE, formData);
-      const existingAppId = getAppId(PROCEDURE_CODE);
-      const { appId, trackingCode } = await createOrUpdateDraft(
-        PROCEDURE_CODE,
-        formData,
-        existingAppId,
-      );
-      setAppId(PROCEDURE_CODE, appId);
-      // Upload ảnh scan sau khi có appId. Await để đảm bảo xong rồi mới show
-      // toast "Đã lưu" — user navigate đi thì cũng không mất ảnh. Lỗi từng
-      // file không throw (catch trong uploadPendingScans) → save vẫn success.
-      await uploadPendingScans(appId);
-      setDraftTrackingCode(trackingCode || null);
-      setIsDirty(false);
+      await persistDraftSilent();
       setShowDraft(true);
     } catch (err) {
       console.warn('[TaoHoSoThuongTru] save draft fail:', (err as Error).message);
@@ -410,15 +422,26 @@ function TaoHoSoThuongTruForm() {
     }
   };
 
-  // Bấm "Nộp hồ sơ" → mở modal xác nhận trước. Tránh nộp nhầm.
+  // Bấm "Nộp hồ sơ":
+  //   1. Validate các giấy tờ bắt buộc (so-huu, q3 user đã tick "Chưa có" ở
+  //      HoSoDinhKemModal) — nếu thiếu → chặn, chỉ cho Lưu nháp.
+  //   2. Nếu đủ → mở modal xác nhận trước. Tránh nộp nhầm.
   const handleSubmit = () => {
     if (!committed) return;
+    const missing = getHoKhauMissingDocs();
+    if (missing.length > 0) {
+      setMissingDocs(missing);
+      sound.error();
+      return;
+    }
+    setMissingDocs([]);
     setShowConfirmSubmit(true);
   };
 
   const handleConfirmSubmit = async () => {
     setShowConfirmSubmit(false);
     setIsDirty(false); // Đã nộp → không cần guard khi navigate.
+    let submittedAppId: number | null = null;
     try {
       // Đảm bảo form data + ảnh đã lưu server TRƯỚC khi submit — tránh nộp
       // dữ liệu cũ nếu user edit sau lần Lưu nháp cuối.
@@ -434,13 +457,24 @@ function TaoHoSoThuongTruForm() {
       await uploadPendingScans(appId);
       // Transition draft → submitted. Sau này BE/list sẽ thấy status 'submitted'.
       await submitApplication(appId);
+      submittedAppId = appId;
+      // Clear cache thủ tục này: appId + formData + scans. Lần sau user vào
+      // trang tạo hồ sơ sẽ bắt đầu fresh (không reuse appId đã submit → tránh
+      // PATCH stale trả 404 từ server).
+      useDraftFormStore.getState().clearProcedure(PROCEDURE_CODE);
+      useScanStore.getState().clearFlow(PROCEDURE_CODE);
     } catch (err) {
       console.warn('[TaoHoSoThuongTru] submit fail:', (err as Error).message);
       // Fallback: vẫn navigate để user không kẹt. Status chưa đổi — user retry
       // qua "Hồ sơ của tôi".
     }
     sound.success();
-    navigate('/nop-ho-so-thanh-cong');
+    // Truyền appId để success page fetch trackingCode + generate QR
+    navigate(
+      submittedAppId
+        ? `/nop-ho-so-thanh-cong?appId=${submittedAppId}`
+        : '/nop-ho-so-thanh-cong',
+    );
   };
 
   return (
@@ -900,6 +934,31 @@ function TaoHoSoThuongTruForm() {
         open={showConfirmSubmit}
         onCancel={() => setShowConfirmSubmit(false)}
         onConfirm={handleConfirmSubmit}
+      />
+
+      {/* Chặn nộp nếu thiếu giấy tờ bắt buộc (user tick "Chưa có" ở Hồ sơ
+          đính kèm, trừ mẫu đơn CT01/CT02). 3 action: lưu nháp, quay lại scan,
+          đóng. */}
+      <SubmitBlockedModal
+        open={missingDocs.length > 0}
+        missingDocs={missingDocs}
+        onClose={() => setMissingDocs([])}
+        onSaveDraft={() => {
+          setMissingDocs([]);
+          void handleSaveDraft();
+        }}
+        onGoBack={async () => {
+          // Auto-save trước → user scan xong quay lại form vẫn thấy data đã
+          // nhập (vì cachedForm từ draftFormStore giờ có formData mới nhất).
+          // Không show toast để UX mượt (user đang đi đâu đó, không cần popup).
+          setMissingDocs([]);
+          try {
+            await persistDraftSilent();
+          } catch (err) {
+            console.warn('[TaoHoSoThuongTru] back-save fail:', (err as Error).message);
+          }
+          navigate(HO_KHAU_SCAN_ROUTE);
+        }}
       />
     </>
   );

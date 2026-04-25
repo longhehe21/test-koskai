@@ -6,8 +6,15 @@ import { usePageHeader } from '@hooks/usePageHeader';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
 import { useTamTruFlowStore, type XoaDangKyCaseId } from '@store/tamTruFlowStore';
+import { getTamTruMissingDocs, getTamTruScanRoute } from '@utils/validateAttachments';
+import { useDraftLifecycle } from '@hooks/useDraftLifecycle';
+import { DraftResumeGate } from '@components/DraftResumeGate';
+import { useDraftFormStore } from '@store/draftFormStore';
+
+const PROCEDURE_CODE = 'xoa-dang-ky';
 import {
   ConfirmSubmitModal,
+  SubmitBlockedModal,
   UnsavedChangesModal,
 } from '@components/ui';
 import {
@@ -83,6 +90,14 @@ function truongHopFromCase(xoaCase: XoaDangKyCaseId): DropdownItem {
 }
 
 export default function TaoHoSoXoaDangKyPage() {
+  return (
+    <DraftResumeGate procedureCode={PROCEDURE_CODE}>
+      {(loadedAppId) => <TaoHoSoXoaDangKyForm key={loadedAppId ?? 'fresh'} />}
+    </DraftResumeGate>
+  );
+}
+
+function TaoHoSoXoaDangKyForm() {
   const navigate = useNavigate();
   const user = useCurrentUser();
   const xoaCaseFromFlow = useTamTruFlowStore((s) => s.xoaDangKyCase);
@@ -92,6 +107,17 @@ export default function TaoHoSoXoaDangKyPage() {
   );
 
   usePageHeader({ title: 'Hồ sơ xóa đăng ký tạm trú' });
+
+  const cachedForm = useMemo(
+    () => (useDraftFormStore.getState().forms[PROCEDURE_CODE] ?? {}) as Record<string, unknown>,
+    [],
+  );
+  const c1 = (cachedForm.section1 ?? {}) as Record<string, unknown>;
+  const c2 = (cachedForm.section2 ?? {}) as Record<string, unknown>;
+  const c3 = (cachedForm.section3 ?? {}) as Record<string, unknown>;
+  const c5 = (cachedForm.section5 ?? {}) as Record<string, unknown>;
+  const c7 = (cachedForm.section7 ?? {}) as Record<string, unknown>;
+  const c8 = (cachedForm.section8 ?? {}) as Record<string, unknown>;
 
   // Build danh sách HSDK dynamic theo các tài liệu user thực sự đã "Đã có".
   // Q1 no (không scan) → list rỗng, user tự thêm qua nút "+ Thêm mới hồ sơ".
@@ -115,32 +141,48 @@ export default function TaoHoSoXoaDangKyPage() {
   }, []);
 
   // Section I
-  const [s1Province, setS1Province] = useState<DropdownItem | null>(null);
-  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(null);
-  const [s1CoQuan, setS1CoQuan] = useState<DropdownItem | null>(COQUAN_ITEMS[0]);
-  const [s1Sdt, setS1Sdt] = useState('');
+  const [s1Province, setS1Province] = useState<DropdownItem | null>(
+    (c1.province as DropdownItem | null) ?? null,
+  );
+  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(
+    (c1.ward as DropdownItem | null) ?? null,
+  );
+  const [s1CoQuan, setS1CoQuan] = useState<DropdownItem | null>(
+    (c1.coquan as DropdownItem | null) ?? COQUAN_ITEMS[0],
+  );
+  const [s1Sdt, setS1Sdt] = useState((c1.sdt as string) ?? '');
 
   // Section II — Thủ tục + Trường hợp (cả 2 locked)
   const [thuTuc, setThuTuc] = useState<DropdownItem | null>(
-    THU_TUC_ITEMS.find((t) => t.code === 'xoa-dang-ky') ?? THU_TUC_ITEMS[2],
+    (c2.thuTuc as DropdownItem | null)
+      ?? THU_TUC_ITEMS.find((t) => t.code === 'xoa-dang-ky')
+      ?? THU_TUC_ITEMS[2],
   );
-  const [truongHop, setTruongHop] = useState<DropdownItem | null>(defaultTruongHop);
+  const [truongHop, setTruongHop] = useState<DropdownItem | null>(
+    (c2.truongHop as DropdownItem | null) ?? defaultTruongHop,
+  );
 
   // Section III — Người đề nghị xóa đăng ký tạm trú
-  const [nguoiKhai, setNguoiKhai] = useState<NguoiKhai>('nguoi-khai');
-  const [ddHoTen, setDdHoTen] = useState(user.hoTen);
-  const [ddNgaySinh, setDdNgaySinh] = useState(user.ngaySinh);
+  const [nguoiKhai, setNguoiKhai] = useState<NguoiKhai>(
+    (c3.nguoiKhai as NguoiKhai) ?? 'nguoi-khai',
+  );
+  const [ddHoTen, setDdHoTen] = useState((c3.ddHoTen as string) ?? user.hoTen);
+  const [ddNgaySinh, setDdNgaySinh] = useState((c3.ddNgaySinh as string) ?? user.ngaySinh);
   const [ddGioiTinh, setDdGioiTinh] = useState<DropdownItem | null>(
-    GIOI_TINH_ITEMS.find((g) => g.name === user.gioiTinh) ?? null,
+    (c3.ddGioiTinh as DropdownItem | null)
+      ?? GIOI_TINH_ITEMS.find((g) => g.name === user.gioiTinh)
+      ?? null,
   );
-  const [ddCccd, setDdCccd] = useState(user.cccd);
-  const [ddSdt, setDdSdt] = useState(user.sdt);
-  const [ddEmail, setDdEmail] = useState('');
-  const [chuHoHoTen, setChuHoHoTen] = useState(user.hoTen);
+  const [ddCccd, setDdCccd] = useState((c3.ddCccd as string) ?? user.cccd);
+  const [ddSdt, setDdSdt] = useState((c3.ddSdt as string) ?? user.sdt);
+  const [ddEmail, setDdEmail] = useState((c3.ddEmail as string) ?? '');
+  const [chuHoHoTen, setChuHoHoTen] = useState((c3.chuHoHoTen as string) ?? user.hoTen);
   const [chuHoQuanHe, setChuHoQuanHe] = useState<DropdownItem | null>(
-    QUAN_HE_ITEMS.find((q) => q.code === 'chu-ho') ?? null,
+    (c3.chuHoQuanHe as DropdownItem | null)
+      ?? QUAN_HE_ITEMS.find((q) => q.code === 'chu-ho')
+      ?? null,
   );
-  const [chuHoCccd, setChuHoCccd] = useState('035405033077');
+  const [chuHoCccd, setChuHoCccd] = useState((c3.chuHoCccd as string) ?? '035405033077');
 
   useEffect(() => {
     if (nguoiKhai === 'nguoi-khai') {
@@ -160,7 +202,7 @@ export default function TaoHoSoXoaDangKyPage() {
   }, [nguoiKhai, user]);
 
   // Section V — Thành viên hộ gia đình cùng thay đổi
-  const [thanhVien, setThanhVien] = useState<ThanhVienRow[]>([
+  const defaultThanhVien: ThanhVienRow[] = [
     {
       id: 1,
       hoTen: user.hoTen,
@@ -169,22 +211,55 @@ export default function TaoHoSoXoaDangKyPage() {
       cccd: '0346976829',
       quanHe: QUAN_HE_ITEMS.find((q) => q.code === 'chu-ho') ?? null,
     },
-  ]);
-  const [thanhVienNext, setThanhVienNext] = useState(2);
+  ];
+  const cachedThanhVien = (c5.thanhVien as ThanhVienRow[] | undefined);
+  const [thanhVien, setThanhVien] = useState<ThanhVienRow[]>(
+    cachedThanhVien && cachedThanhVien.length > 0 ? cachedThanhVien : defaultThanhVien,
+  );
+  const [thanhVienNext, setThanhVienNext] = useState(
+    thanhVien.length > 0 ? Math.max(...thanhVien.map((r) => r.id)) + 1 : 2,
+  );
 
   // Section VII — Hồ sơ đính kèm (danh sách dynamic theo tài liệu đã scan)
-  const [hoSo, setHoSo] = useState<HoSoRow[]>(initialHoSo);
-  const [hoSoNext, setHoSoNext] = useState(initialHoSo.length + 1);
+  const cachedHoSo = (c7.hoSo as HoSoRow[] | undefined);
+  const [hoSo, setHoSo] = useState<HoSoRow[]>(
+    cachedHoSo && cachedHoSo.length > 0 ? cachedHoSo : initialHoSo,
+  );
+  const [hoSoNext, setHoSoNext] = useState(
+    hoSo.length > 0 ? Math.max(...hoSo.map((r) => r.id)) + 1 : initialHoSo.length + 1,
+  );
 
   // Section VIII — Nhận kết quả
-  const [s8ThongBao, setS8ThongBao] = useState<string[]>([]);
-  const [s8KetQua, setS8KetQua] = useState<DropdownItem | null>(null);
-  const [s8Email, setS8Email] = useState('');
+  const [s8ThongBao, setS8ThongBao] = useState<string[]>(
+    (c8.thongBao as string[]) ?? [],
+  );
+  const [s8KetQua, setS8KetQua] = useState<DropdownItem | null>(
+    (c8.ketQua as DropdownItem | null) ?? null,
+  );
+  const [s8Email, setS8Email] = useState((c8.email as string) ?? '');
   const showEmail = s8ThongBao.includes('email') || s8KetQua?.code === 'email';
 
-  const [committed, setCommitted] = useState(false);
-  const [showDraft, setShowDraft] = useState(false);
+  const [committed, setCommitted] = useState((cachedForm.committed as boolean) ?? false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [missingDocs, setMissingDocs] = useState<string[]>([]);
+
+  const buildFormData = () => ({
+    section1: { province: s1Province, ward: s1Ward, coquan: s1CoQuan, sdt: s1Sdt },
+    section2: { thuTuc, truongHop },
+    section3: {
+      nguoiKhai, ddHoTen, ddNgaySinh, ddGioiTinh, ddCccd, ddSdt, ddEmail,
+      chuHoHoTen, chuHoQuanHe, chuHoCccd,
+    },
+    section5: { thanhVien },
+    section7: { hoSo },
+    section8: { thongBao: s8ThongBao, ketQua: s8KetQua, email: s8Email },
+    committed,
+  });
+
+  const {
+    showDraft, setShowDraft, draftTrackingCode,
+    persistDraftSilent, handleSaveDraft, handleConfirmSubmit: doConfirmSubmit,
+  } = useDraftLifecycle({ procedureCode: PROCEDURE_CODE, buildFormData });
 
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = () => {
@@ -218,13 +293,19 @@ export default function TaoHoSoXoaDangKyPage() {
 
   const handleSubmit = () => {
     if (!committed) return;
+    const missing = getTamTruMissingDocs();
+    if (missing.length > 0) {
+      setMissingDocs(missing);
+      return;
+    }
+    setMissingDocs([]);
     setShowConfirmSubmit(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowConfirmSubmit(false);
     setIsDirty(false);
-    navigate('/nop-ho-so-thanh-cong');
+    await doConfirmSubmit();
   };
 
   return (
@@ -669,7 +750,7 @@ export default function TaoHoSoXoaDangKyPage() {
 
         <FormFooter
           onBack={() => guard(() => navigate(-1))}
-          onDraft={() => setShowDraft(true)}
+          onDraft={() => void handleSaveDraft()}
           onSubmit={handleSubmit}
           submitEnabled={committed}
         />
@@ -680,6 +761,7 @@ export default function TaoHoSoXoaDangKyPage() {
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
         onList={() => navigate('/ho-so-cua-toi?status=draft')}
+        trackingCode={draftTrackingCode}
       />
 
       <UnsavedChangesModal
@@ -687,7 +769,7 @@ export default function TaoHoSoXoaDangKyPage() {
         onClose={cancel}
         onSaveDraft={() => {
           cancel();
-          setShowDraft(true);
+          void handleSaveDraft();
         }}
         onDiscard={proceed}
       />
@@ -697,6 +779,24 @@ export default function TaoHoSoXoaDangKyPage() {
         onCancel={() => setShowConfirmSubmit(false)}
         onConfirm={handleConfirmSubmit}
         title="Xác nhận nộp hồ sơ xóa đăng ký tạm trú"
+      />
+
+      <SubmitBlockedModal
+        open={missingDocs.length > 0}
+        missingDocs={missingDocs}
+        onClose={() => setMissingDocs([])}
+        onSaveDraft={() => {
+          setMissingDocs([]);
+          void handleSaveDraft();
+        }}
+        onGoBack={async () => {
+          setMissingDocs([]);
+          try { await persistDraftSilent(); } catch (err) {
+            console.warn('[XoaDangKy] back-save fail:', (err as Error).message);
+          }
+          const route = getTamTruScanRoute();
+          if (route) navigate(route);
+        }}
       />
     </>
   );

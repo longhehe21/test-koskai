@@ -1,0 +1,1048 @@
+/* ============================================================
+ * CCCD Scan — UI giả lập quét chip NFC
+ * Design: light tech / soft 3D, glassmorphic readout
+ * ============================================================ */
+
+.ccs-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse at top, #dbeafe 0%, #eff6ff 40%, #ffffff 80%),
+    #ffffff;
+  color: var(--kiosk-text, #1a1a2e);
+  overflow: hidden;
+  font-family: inherit;
+}
+
+/* ===== Background layers ===== */
+.ccs-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse at center, #000 35%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Soft blue halo + blob behind card */
+.ccs-bg-glow {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  height: 720px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(30, 58, 138, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 70% 60%, rgba(37, 99, 235, 0.2) 0%, transparent 55%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+  animation: ccs-glow-pulse 7s ease-in-out infinite;
+}
+
+@keyframes ccs-glow-pulse {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;   transform: translateX(-50%) scale(1.08); }
+}
+
+/* Floating decorative orbs for 3D depth */
+.ccs-area::before,
+.ccs-area::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ccs-area::before {
+  top: 14%;
+  left: 6%;
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle, rgba(191, 219, 254, 0.7), rgba(191, 219, 254, 0));
+  animation: ccs-float 8s ease-in-out infinite;
+}
+
+.ccs-area::after {
+  bottom: 16%;
+  right: 8%;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(165, 180, 252, 0.55), rgba(165, 180, 252, 0));
+  animation: ccs-float 10s ease-in-out infinite reverse;
+}
+
+@keyframes ccs-float {
+  0%, 100% { transform: translateY(0)    scale(1); }
+  50%      { transform: translateY(-14px) scale(1.06); }
+}
+
+/* ===== Header ===== */
+.ccs-header {
+  position: relative;
+  z-index: 2;
+  padding: 28px 32px 18px;
+  text-align: center;
+}
+
+.ccs-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 50%, #1e3a8a 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.ccs-subtitle {
+  margin: 0 auto 14px;
+  max-width: 560px;
+  font-size: 13.5px;
+  color: var(--kiosk-text-muted, #64748b);
+  line-height: 1.5;
+}
+
+.ccs-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.25);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.3s;
+}
+
+.ccs-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  animation: ccs-status-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ccs-status-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+  50%      { box-shadow: 0 0 0 7px rgba(37, 99, 235, 0.05); }
+}
+
+.ccs-status--idle     { color: #64748b; }
+.ccs-status--scanning { color: #1d4ed8; border-color: rgba(37, 99, 235, 0.5); background: rgba(219, 234, 254, 0.95); }
+.ccs-status--success  { color: #15803d; border-color: rgba(34, 197, 94, 0.5); background: rgba(220, 252, 231, 0.95); }
+
+/* ===== Stage (card + readout) ===== */
+.ccs-stage {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(320px, 1fr);
+  gap: 32px;
+  padding: 8px 40px 16px;
+  align-items: center;
+  min-height: 0;
+  perspective: 1400px; /* enable 3D children */
+}
+
+/* ===== CCCD card visual ===== */
+.ccs-card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 20px 0;
+  transform-style: preserve-3d;
+}
+
+/* NFC concentric rings — dao động khi scanning */
+.ccs-nfc-rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 460px;
+  height: 460px;
+  transform: translate(-50%, -56%);
+  pointer-events: none;
+}
+
+.ccs-nfc-rings span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  margin: -80px 0 0 -80px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(37, 99, 235, 0.55);
+  opacity: 0;
+}
+
+.ccs-card-wrap--scanning .ccs-nfc-rings span {
+  animation: ccs-ring-pulse 2.4s ease-out infinite;
+}
+
+.ccs-card-wrap--scanning .ccs-nfc-rings span:nth-child(2) { animation-delay: 0.6s; }
+.ccs-card-wrap--scanning .ccs-nfc-rings span:nth-child(3) { animation-delay: 1.2s; }
+
+.ccs-card-wrap--idle .ccs-nfc-rings span {
+  animation: ccs-ring-hint 3.4s ease-out infinite;
+}
+
+.ccs-card-wrap--idle .ccs-nfc-rings span:nth-child(2) { animation-delay: 1s; }
+.ccs-card-wrap--idle .ccs-nfc-rings span:nth-child(3) { animation-delay: 2s; }
+
+@keyframes ccs-ring-pulse {
+  0%   { transform: scale(0.55); opacity: 0; border-color: rgba(37, 99, 235, 0.85); }
+  20%  { opacity: 0.9; }
+  100% { transform: scale(2.6); opacity: 0; border-color: rgba(37, 99, 235, 0.05); }
+}
+
+@keyframes ccs-ring-hint {
+  0%, 100% { transform: scale(1); opacity: 0.18; }
+  50%      { transform: scale(1.18); opacity: 0; }
+}
+
+/* The card itself — phong cách CCCD Việt Nam (nền cyan-mint + map) */
+.ccs-card {
+  position: relative;
+  width: 440px;
+  height: 278px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 80% 110%, rgba(125, 211, 252, 0.5) 0%, transparent 55%),
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 50%),
+    linear-gradient(135deg, #ccfbf1 0%, #a5f3fc 40%, #bae6fd 100%);
+  box-shadow:
+    0 30px 60px -15px rgba(8, 145, 178, 0.35),
+    0 12px 30px -8px rgba(15, 23, 42, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+    0 -2px 12px rgba(255, 255, 255, 0.5) inset;
+  overflow: hidden;
+  color: #0c4a6e;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+  transform: rotateX(8deg) rotateY(-10deg);
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s;
+  animation: ccs-card-float 6s ease-in-out infinite;
+}
+
+@keyframes ccs-card-float {
+  0%, 100% { transform: rotateX(8deg) rotateY(-10deg) translateY(0); }
+  50%      { transform: rotateX(6deg) rotateY(-12deg) translateY(-6px); }
+}
+
+/* Khi scanning: giữ tilt 3D mạnh + nhịp float nhanh hơn để cảm giác "đang xử lý" */
+.ccs-card-wrap--scanning .ccs-card {
+  animation: ccs-card-float-scan 3.2s ease-in-out infinite;
+  box-shadow:
+    0 36px 70px -15px rgba(8, 145, 178, 0.45),
+    0 0 0 1.5px rgba(37, 99, 235, 0.6) inset,
+    0 0 50px rgba(37, 99, 235, 0.45),
+    0 0 100px rgba(37, 99, 235, 0.2);
+}
+
+@keyframes ccs-card-float-scan {
+  0%, 100% { transform: rotateX(8deg) rotateY(-10deg) translateY(-2px) scale(1.02); }
+  50%      { transform: rotateX(7deg) rotateY(-12deg) translateY(-8px) scale(1.02); }
+}
+
+/* Khi success: tilt vẫn rõ + nhịp float chậm lại như đang nghỉ */
+.ccs-card-wrap--success .ccs-card {
+  animation: ccs-card-float 7s ease-in-out infinite;
+  box-shadow:
+    0 30px 60px -15px rgba(8, 145, 178, 0.35),
+    0 0 0 1.5px rgba(34, 197, 94, 0.6) inset,
+    0 0 40px rgba(34, 197, 94, 0.35);
+}
+
+/* Vietnam map watermark (full-card backdrop) */
+.ccs-card-map {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75%;
+  height: 90%;
+  color: rgba(8, 145, 178, 0.18);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ccs-card-map svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Subtle guilloché-style pattern overlay */
+.ccs-card-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 6px, rgba(8, 145, 178, 0.04) 6px 7px),
+    repeating-linear-gradient(-45deg, transparent 0 6px, rgba(8, 145, 178, 0.04) 6px 7px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Card header (emblem + titles + QR) ===== */
+.ccs-card-header {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 38px 1fr 40px;
+  gap: 8px;
+  align-items: center;
+}
+
+.ccs-card-emblem {
+  width: 38px;
+  height: 38px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+.ccs-card-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.12;
+  color: #0c4a6e;
+}
+
+.ccs-cardline-cap {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.ccs-cardline-motto {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin: 1px 0;
+}
+
+.ccs-cardline-en {
+  font-size: 7.5px;
+  font-style: italic;
+  font-weight: 600;
+  opacity: 0.8;
+  letter-spacing: 0.2px;
+}
+
+.ccs-card-qr {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ccs-card-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== Main title strip ===== */
+.ccs-card-titlemain {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.ccs-card-titlemain strong {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #b91c1c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.ccs-card-titlemain-en {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #1e3a8a;
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+}
+
+.ccs-card-chipmini {
+  display: inline-flex;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+  transition: filter 0.4s;
+}
+
+.ccs-card-wrap--scanning .ccs-card-chipmini {
+  filter:
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25))
+    drop-shadow(0 0 4px rgba(253, 230, 138, 0.95));
+  animation: ccs-chip-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes ccs-chip-glow {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+
+/* ===== Body: photo + fields ===== */
+.ccs-card-body {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: 4px;
+  min-height: 0;
+}
+
+.ccs-card-photo {
+  width: 64px;
+  height: 86px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(186, 230, 253, 0.4));
+  border: 1px solid rgba(8, 145, 178, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.ccs-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  min-width: 0;
+  color: #0f172a;
+}
+
+.ccs-card-line {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.ccs-card-line i {
+  font-style: normal;
+  font-size: 8px;
+  letter-spacing: 0.3px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.ccs-card-line b {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: filter 0.4s, opacity 0.4s;
+}
+
+.ccs-card-line b.ccs-card-no {
+  font-size: 14px;
+  font-weight: 800;
+  color: #b91c1c;
+  letter-spacing: 1px;
+}
+
+.ccs-card-line b.is-masked {
+  filter: blur(0.5px);
+  opacity: 0.55;
+  letter-spacing: 1.5px;
+  color: #475569;
+}
+
+/* Hiệu ứng "vừa decode xong" — flash cyan + slide-in chữ */
+.ccs-card-line b.is-decoding,
+.ccs-card-expiry b.is-decoding {
+  animation: ccs-decode-flash 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ccs-decode-flash {
+  0% {
+    color: #2563eb;
+    text-shadow: 0 0 8px rgba(37, 99, 235, 0.85), 0 0 14px rgba(37, 99, 235, 0.5);
+    transform: translateY(-2px);
+    opacity: 0;
+    filter: blur(2px);
+  }
+  35% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translateY(0);
+    text-shadow: none;
+  }
+}
+
+/* Số CCCD vẫn giữ màu đỏ sau khi flash xong */
+.ccs-card-line b.ccs-card-no.is-decoding {
+  animation-name: ccs-decode-flash-no;
+}
+
+@keyframes ccs-decode-flash-no {
+  0% {
+    color: #2563eb;
+    text-shadow: 0 0 10px rgba(37, 99, 235, 0.95), 0 0 18px rgba(37, 99, 235, 0.55);
+    transform: translateY(-2px);
+    opacity: 0;
+    filter: blur(2px);
+  }
+  35% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    color: #b91c1c;
+    transform: translateY(0);
+    text-shadow: none;
+  }
+}
+
+.ccs-card-line--two {
+  flex-direction: row;
+  gap: 10px;
+}
+
+.ccs-card-line--two > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+/* ===== Expiry ===== */
+.ccs-card-expiry {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.ccs-card-expiry > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ccs-card-expiry i {
+  font-style: normal;
+  font-size: 8px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.ccs-card-expiry b {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+  transition: filter 0.4s, opacity 0.4s;
+}
+
+.ccs-card-expiry b.is-masked {
+  filter: blur(0.5px);
+  opacity: 0.55;
+  letter-spacing: 1.5px;
+  color: #475569;
+}
+
+/* Scan beam */
+.ccs-scan-beam {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(30, 58, 138, 0.06) 30%,
+    rgba(37, 99, 235, 0.4) 50%,
+    rgba(30, 58, 138, 0.06) 70%,
+    transparent 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+  mix-blend-mode: multiply;
+}
+
+.ccs-card-wrap--scanning .ccs-scan-beam {
+  opacity: 1;
+  animation: ccs-beam-sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes ccs-beam-sweep {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(180%); }
+}
+
+/* Diagonal shine */
+.ccs-scan-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.ccs-card-wrap--scanning .ccs-scan-shine {
+  animation: ccs-shine-slide 2.4s ease-in-out infinite;
+}
+
+@keyframes ccs-shine-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* NFC reader visual under card */
+.ccs-reader {
+  position: relative;
+  width: 320px;
+  height: 50px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 -2px 4px rgba(37, 99, 235, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    0 18px 30px -12px rgba(37, 99, 235, 0.32),
+    0 6px 14px -6px rgba(15, 23, 42, 0.12);
+}
+
+.ccs-reader-line {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.45), transparent);
+  transform: translateY(-50%);
+}
+
+.ccs-card-wrap--scanning .ccs-reader-line {
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 1), transparent);
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.7);
+  animation: ccs-reader-scan 1.6s ease-in-out infinite;
+}
+
+@keyframes ccs-reader-scan {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+.ccs-reader-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #94a3b8;
+}
+
+/* ===== Readout panel ===== */
+.ccs-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 20px 50px -16px rgba(37, 99, 235, 0.28),
+    0 8px 20px -8px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  max-height: 100%;
+  min-height: 0;
+}
+
+.ccs-readout-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(37, 99, 235, 0.2);
+}
+
+.ccs-readout-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.ccs-readout-dot--scanning {
+  background: #2563eb;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+  animation: ccs-status-pulse 1.2s ease-in-out infinite;
+}
+
+.ccs-readout-dot--success {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.ccs-readout-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kiosk-primary-dark, #1e3a8a);
+  letter-spacing: 0.3px;
+}
+
+.ccs-readout-meta {
+  font-size: 10.5px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  background: rgba(241, 245, 249, 0.9);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.ccs-readout-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.ccs-readout-item {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.3s;
+  align-items: center;
+  min-height: 36px;
+}
+
+.ccs-readout-item.is-visible {
+  background: rgba(219, 234, 254, 0.6);
+  border-color: rgba(37, 99, 235, 0.35);
+  animation: ccs-item-reveal 0.4s ease-out;
+}
+
+.ccs-readout-item.is-current {
+  border-color: rgba(37, 99, 235, 0.7);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15), 0 6px 16px -4px rgba(37, 99, 235, 0.3);
+}
+
+@keyframes ccs-item-reveal {
+  from { transform: translateX(8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.ccs-readout-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+}
+
+.ccs-readout-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.ccs-readout-value.is-mono {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  letter-spacing: 0.5px;
+  color: var(--kiosk-primary, #2563eb);
+}
+
+.ccs-readout-skeleton {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(203, 213, 225, 0.4) 0%,
+    rgba(203, 213, 225, 0.8) 50%,
+    rgba(203, 213, 225, 0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: ccs-skeleton-shimmer 1.4s linear infinite;
+}
+
+@keyframes ccs-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Progress bar */
+.ccs-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(37, 99, 235, 0.2);
+}
+
+.ccs-progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.9);
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.ccs-progress-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #3b82f6 0%,
+    #2563eb 50%,
+    #1e3a8a 100%
+  );
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+  border-radius: 999px;
+  transition: width 0.1s linear;
+  position: relative;
+}
+
+.ccs-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  background-size: 50% 100%;
+  animation: ccs-progress-shimmer 1.4s linear infinite;
+}
+
+@keyframes ccs-progress-shimmer {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ccs-progress-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kiosk-primary, #2563eb);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* ===== Footer ===== */
+.ccs-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px 24px;
+  gap: 12px;
+}
+
+.ccs-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.ccs-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ccs-btn--ghost {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #475569;
+  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.1);
+}
+
+.ccs-btn--ghost:hover {
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.5);
+  color: var(--kiosk-primary, #2563eb);
+  transform: translateY(-1px);
+}
+
+.ccs-btn--primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+  color: #fff;
+  box-shadow:
+    0 12px 28px -6px rgba(37, 99, 235, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.ccs-btn--primary:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 36px -6px rgba(37, 99, 235, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.ccs-btn-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(37, 99, 235, 0.6);
+  animation: ccs-btn-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ccs-btn-pulse {
+  0%   { transform: scale(1);    opacity: 0.7; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+.ccs-btn--success {
+  background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+  color: #fff;
+  box-shadow:
+    0 12px 28px -6px rgba(37, 99, 235, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  animation: ccs-success-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ccs-btn--success:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 36px -6px rgba(37, 99, 235, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@keyframes ccs-success-in {
+  from { transform: translateY(8px) scale(0.96); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+.ccs-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  animation: ccs-spin 0.7s linear infinite;
+}
+
+@keyframes ccs-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Responsive (smaller kiosk panels) ===== */
+@media (max-width: 1100px) {
+  .ccs-stage {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 8px 24px 12px;
+    overflow-y: auto;
+  }
+
+  .ccs-card-wrap {
+    padding: 12px 0;
+  }
+
+  .ccs-nfc-rings {
+    transform: translate(-50%, -54%);
+  }
+}
+
+@media (max-width: 720px) {
+  .ccs-card {
+    width: 360px;
+    height: 228px;
+    transform: rotateX(6deg) rotateY(-6deg);
+  }
+
+  .ccs-card-titlemain strong {
+    font-size: 15px;
+    letter-spacing: 1.5px;
+  }
+
+  .ccs-reader {
+    width: 280px;
+  }
+}

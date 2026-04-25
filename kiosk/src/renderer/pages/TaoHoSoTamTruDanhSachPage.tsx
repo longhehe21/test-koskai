@@ -6,8 +6,15 @@ import { usePageHeader } from '@hooks/usePageHeader';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
 import { useTamTruFlowStore } from '@store/tamTruFlowStore';
+import { getTamTruMissingDocs, getTamTruScanRoute } from '@utils/validateAttachments';
+import { useDraftLifecycle } from '@hooks/useDraftLifecycle';
+import { DraftResumeGate } from '@components/DraftResumeGate';
+import { useDraftFormStore } from '@store/draftFormStore';
+
+const PROCEDURE_CODE = 'tam-tru';
 import {
   ConfirmSubmitModal,
+  SubmitBlockedModal,
   UnsavedChangesModal,
 } from '@components/ui';
 import {
@@ -102,6 +109,14 @@ const emptyHoSo = (id: number): HoSoRow => ({
 });
 
 export default function TaoHoSoTamTruDanhSachPage() {
+  return (
+    <DraftResumeGate procedureCode={PROCEDURE_CODE}>
+      {(loadedAppId) => <TaoHoSoTamTruDanhSachForm key={loadedAppId ?? 'fresh'} />}
+    </DraftResumeGate>
+  );
+}
+
+function TaoHoSoTamTruDanhSachForm() {
   const navigate = useNavigate();
   const user = useCurrentUser();
   const truongHopFromFlow = useTamTruFlowStore((s) => s.truongHop);
@@ -113,77 +128,143 @@ export default function TaoHoSoTamTruDanhSachPage() {
 
   usePageHeader({ title: 'Hồ sơ đăng ký tạm trú' });
 
+  const cachedForm = useMemo(
+    () => (useDraftFormStore.getState().forms[PROCEDURE_CODE] ?? {}) as Record<string, unknown>,
+    [],
+  );
+  const c1 = (cachedForm.section1 ?? {}) as Record<string, unknown>;
+  const c2 = (cachedForm.section2 ?? {}) as Record<string, unknown>;
+  const c3 = (cachedForm.section3 ?? {}) as Record<string, unknown>;
+  const c4 = (cachedForm.section4 ?? {}) as Record<string, unknown>;
+  const c5 = (cachedForm.section5 ?? {}) as Record<string, unknown>;
+  const c6 = (cachedForm.section6 ?? {}) as Record<string, unknown>;
+  const c7 = (cachedForm.section7 ?? {}) as Record<string, unknown>;
+  const c8 = (cachedForm.section8 ?? {}) as Record<string, unknown>;
+
   // Section I
-  const [s1Province, setS1Province] = useState<DropdownItem | null>(null);
-  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(null);
-  const [s1CoQuan, setS1CoQuan] = useState<DropdownItem | null>(COQUAN_ITEMS[0]);
-  const [s1Sdt, setS1Sdt] = useState('');
+  const [s1Province, setS1Province] = useState<DropdownItem | null>(
+    (c1.province as DropdownItem | null) ?? null,
+  );
+  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(
+    (c1.ward as DropdownItem | null) ?? null,
+  );
+  const [s1CoQuan, setS1CoQuan] = useState<DropdownItem | null>(
+    (c1.coquan as DropdownItem | null) ?? COQUAN_ITEMS[0],
+  );
+  const [s1Sdt, setS1Sdt] = useState((c1.sdt as string) ?? '');
 
   // Section II
-  const [loaiThuTuc, setLoaiThuTuc] = useState<DropdownItem | null>(LOAI_THU_TUC_ITEMS[0]);
-  const [truongHop, setTruongHop] = useState<DropdownItem | null>(defaultTruongHop);
+  const [loaiThuTuc, setLoaiThuTuc] = useState<DropdownItem | null>(
+    (c2.loaiThuTuc as DropdownItem | null) ?? LOAI_THU_TUC_ITEMS[0],
+  );
+  const [truongHop, setTruongHop] = useState<DropdownItem | null>(
+    (c2.truongHop as DropdownItem | null) ?? defaultTruongHop,
+  );
 
   // Section III — Thông tin đề nghị
-  const [s3Province, setS3Province] = useState<DropdownItem | null>(null);
-  const [s3Ward, setS3Ward] = useState<DropdownItem | null>(null);
-  const [s3DiaChi, setS3DiaChi] = useState('Số 120 Trần Cung');
-  const [laNguoiKhaiBao, setLaNguoiKhaiBao] = useState(true);
-  const [daiDienHoTen, setDaiDienHoTen] = useState(user.hoTen);
-  const [daiDienNgaySinh, setDaiDienNgaySinh] = useState(user.ngaySinh);
-  const [daiDienCccd, setDaiDienCccd] = useState(user.cccd);
+  const [s3Province, setS3Province] = useState<DropdownItem | null>(
+    (c3.province as DropdownItem | null) ?? null,
+  );
+  const [s3Ward, setS3Ward] = useState<DropdownItem | null>(
+    (c3.ward as DropdownItem | null) ?? null,
+  );
+  const [s3DiaChi, setS3DiaChi] = useState((c3.diaChi as string) ?? 'Số 120 Trần Cung');
+  const [laNguoiKhaiBao, setLaNguoiKhaiBao] = useState((c3.laNguoiKhaiBao as boolean) ?? true);
+  const [daiDienHoTen, setDaiDienHoTen] = useState((c3.daiDienHoTen as string) ?? user.hoTen);
+  const [daiDienNgaySinh, setDaiDienNgaySinh] = useState((c3.daiDienNgaySinh as string) ?? user.ngaySinh);
+  const [daiDienCccd, setDaiDienCccd] = useState((c3.daiDienCccd as string) ?? user.cccd);
   const [daiDienGioiTinh, setDaiDienGioiTinh] = useState<DropdownItem | null>(
-    GIOI_TINH_ITEMS.find((g) => g.name === user.gioiTinh) ?? null,
+    (c3.daiDienGioiTinh as DropdownItem | null)
+      ?? GIOI_TINH_ITEMS.find((g) => g.name === user.gioiTinh) ?? null,
   );
-  const [daiDienSdt, setDaiDienSdt] = useState(user.sdt);
-  const [daiDienEmail, setDaiDienEmail] = useState('');
+  const [daiDienSdt, setDaiDienSdt] = useState((c3.daiDienSdt as string) ?? user.sdt);
+  const [daiDienEmail, setDaiDienEmail] = useState((c3.daiDienEmail as string) ?? '');
+  const defaultNoiThuongTru = `${user.thuongTru.diaChi}, ${user.thuongTru.ward}, ${user.thuongTru.province}`;
   const [noiThuongTru, setNoiThuongTru] = useState(
-    `${user.thuongTru.diaChi}, ${user.thuongTru.ward}, ${user.thuongTru.province}`,
+    (c3.noiThuongTru as string) ?? defaultNoiThuongTru,
   );
-  const [noiOHienTai, setNoiOHienTai] = useState(noiThuongTru);
+  const [noiOHienTai, setNoiOHienTai] = useState((c3.noiOHienTai as string) ?? defaultNoiThuongTru);
   const [noiDungDeNghi, setNoiDungDeNghi] = useState(
-    'Đăng ký tạm trú - Gia hạn tạm trú theo danh sách',
+    (c3.noiDungDeNghi as string) ?? 'Đăng ký tạm trú - Gia hạn tạm trú theo danh sách',
   );
-  const [yKienDaiDien, setYKienDaiDien] = useState('');
-  const [thoiHanTamTru, setThoiHanTamTru] = useState('');
+  const [yKienDaiDien, setYKienDaiDien] = useState((c3.yKienDaiDien as string) ?? '');
+  const [thoiHanTamTru, setThoiHanTamTru] = useState((c3.thoiHanTamTru as string) ?? '');
 
   // Section IV — Danh sách công dân đăng ký tạm trú
-  const [congDan, setCongDan] = useState<CongDanRow[]>([
-    {
-      id: 1,
-      hoTen: user.hoTen,
-      ngaySinh: user.ngaySinh,
-      gioiTinh: user.gioiTinh,
-      cccd: user.cccd,
-      thoiHan: '',
-    },
-  ]);
-  const [congDanNext, setCongDanNext] = useState(2);
+  const defaultCongDan: CongDanRow[] = [
+    { id: 1, hoTen: user.hoTen, ngaySinh: user.ngaySinh, gioiTinh: user.gioiTinh, cccd: user.cccd, thoiHan: '' },
+  ];
+  const cachedCongDan = c4.congDan as CongDanRow[] | undefined;
+  const [congDan, setCongDan] = useState<CongDanRow[]>(
+    cachedCongDan && cachedCongDan.length > 0 ? cachedCongDan : defaultCongDan,
+  );
+  const [congDanNext, setCongDanNext] = useState(
+    congDan.length > 0 ? Math.max(...congDan.map((r) => r.id)) + 1 : 2,
+  );
 
   // Section V — Thông tin xác nhận tờ khai
-  const [nguoiKeKhai, setNguoiKeKhai] = useState<NguoiKeKhai[]>([]);
-  const [xinYKien, setXinYKien] = useState<XinYKienRow[]>([]);
-  const [xinYKienNext, setXinYKienNext] = useState(1);
+  const [nguoiKeKhai, setNguoiKeKhai] = useState<NguoiKeKhai[]>(
+    (c5.nguoiKeKhai as NguoiKeKhai[]) ?? [],
+  );
+  const cachedXinYKien = (c5.xinYKien as XinYKienRow[] | undefined) ?? [];
+  const [xinYKien, setXinYKien] = useState<XinYKienRow[]>(cachedXinYKien);
+  const [xinYKienNext, setXinYKienNext] = useState(
+    cachedXinYKien.length > 0 ? Math.max(...cachedXinYKien.map((r) => r.id)) + 1 : 1,
+  );
 
   // Section VI — Hồ sơ đính kèm
-  const [hoSo, setHoSo] = useState<HoSoRow[]>([
+  const defaultHoSo: HoSoRow[] = [
     { id: 1, tenGiayTo: 'Giấy tờ chứng minh quyền sở hữu đất', hinhThuc: '', soLuong: '', ghiChu: '' },
-  ]);
-  const [hoSoNext, setHoSoNext] = useState(2);
+  ];
+  const cachedHoSo = c6.hoSo as HoSoRow[] | undefined;
+  const [hoSo, setHoSo] = useState<HoSoRow[]>(
+    cachedHoSo && cachedHoSo.length > 0 ? cachedHoSo : defaultHoSo,
+  );
+  const [hoSoNext, setHoSoNext] = useState(
+    hoSo.length > 0 ? Math.max(...hoSo.map((r) => r.id)) + 1 : 2,
+  );
 
   // Section VII — Thông tin nhận thông báo
-  const [s7ThongBao, setS7ThongBao] = useState<string[]>([]);
-  const [s7KetQua, setS7KetQua] = useState<DropdownItem | null>(null);
-  const [s7Email, setS7Email] = useState('');
+  const [s7ThongBao, setS7ThongBao] = useState<string[]>((c7.thongBao as string[]) ?? []);
+  const [s7KetQua, setS7KetQua] = useState<DropdownItem | null>(
+    (c7.ketQua as DropdownItem | null) ?? null,
+  );
+  const [s7Email, setS7Email] = useState((c7.email as string) ?? '');
   const showEmail = s7ThongBao.includes('email') || s7KetQua?.code === 'email';
 
   // Section VIII — Thông tin lệ phí
-  const [lePhi, setLePhi] = useState<LePhi>('co-phi');
-  const [lyDoMienPhi, setLyDoMienPhi] = useState<DropdownItem | null>(null);
+  const [lePhi, setLePhi] = useState<LePhi>((c8.lePhi as LePhi) ?? 'co-phi');
+  const [lyDoMienPhi, setLyDoMienPhi] = useState<DropdownItem | null>(
+    (c8.lyDoMienPhi as DropdownItem | null) ?? null,
+  );
 
   // Commit + draft
-  const [committed, setCommitted] = useState(false);
-  const [showDraft, setShowDraft] = useState(false);
+  const [committed, setCommitted] = useState((cachedForm.committed as boolean) ?? false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [missingDocs, setMissingDocs] = useState<string[]>([]);
+
+  const buildFormData = () => ({
+    section1: { province: s1Province, ward: s1Ward, coquan: s1CoQuan, sdt: s1Sdt },
+    section2: { loaiThuTuc, truongHop },
+    section3: {
+      province: s3Province, ward: s3Ward, diaChi: s3DiaChi,
+      laNguoiKhaiBao, daiDienHoTen, daiDienNgaySinh, daiDienCccd,
+      daiDienGioiTinh, daiDienSdt, daiDienEmail,
+      noiThuongTru, noiOHienTai, noiDungDeNghi, yKienDaiDien, thoiHanTamTru,
+    },
+    section4: { congDan },
+    section5: { nguoiKeKhai, xinYKien },
+    section6: { hoSo },
+    section7: { thongBao: s7ThongBao, ketQua: s7KetQua, email: s7Email },
+    section8: { lePhi, lyDoMienPhi },
+    committed,
+    __variant: 'danh-sach',
+  });
+
+  const {
+    showDraft, setShowDraft, draftTrackingCode,
+    persistDraftSilent, handleSaveDraft, handleConfirmSubmit: doConfirmSubmit,
+  } = useDraftLifecycle({ procedureCode: PROCEDURE_CODE, buildFormData });
 
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = () => {
@@ -237,13 +318,19 @@ export default function TaoHoSoTamTruDanhSachPage() {
 
   const handleSubmit = () => {
     if (!committed) return;
+    const missing = getTamTruMissingDocs();
+    if (missing.length > 0) {
+      setMissingDocs(missing);
+      return;
+    }
+    setMissingDocs([]);
     setShowConfirmSubmit(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowConfirmSubmit(false);
     setIsDirty(false);
-    navigate('/nop-ho-so-thanh-cong');
+    await doConfirmSubmit();
   };
 
   return (
@@ -905,7 +992,7 @@ export default function TaoHoSoTamTruDanhSachPage() {
 
         <FormFooter
           onBack={() => guard(() => navigate(-1))}
-          onDraft={() => setShowDraft(true)}
+          onDraft={() => void handleSaveDraft()}
           onSubmit={handleSubmit}
           submitEnabled={committed}
         />
@@ -916,6 +1003,7 @@ export default function TaoHoSoTamTruDanhSachPage() {
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
         onList={() => navigate('/ho-so-cua-toi?status=draft')}
+        trackingCode={draftTrackingCode}
       />
 
       <UnsavedChangesModal
@@ -923,7 +1011,7 @@ export default function TaoHoSoTamTruDanhSachPage() {
         onClose={cancel}
         onSaveDraft={() => {
           cancel();
-          setShowDraft(true);
+          void handleSaveDraft();
         }}
         onDiscard={proceed}
       />
@@ -933,6 +1021,24 @@ export default function TaoHoSoTamTruDanhSachPage() {
         onCancel={() => setShowConfirmSubmit(false)}
         onConfirm={handleConfirmSubmit}
         title="Xác nhận nộp hồ sơ đăng ký tạm trú theo danh sách"
+      />
+
+      <SubmitBlockedModal
+        open={missingDocs.length > 0}
+        missingDocs={missingDocs}
+        onClose={() => setMissingDocs([])}
+        onSaveDraft={() => {
+          setMissingDocs([]);
+          void handleSaveDraft();
+        }}
+        onGoBack={async () => {
+          setMissingDocs([]);
+          try { await persistDraftSilent(); } catch (err) {
+            console.warn('[TamTruDS] back-save fail:', (err as Error).message);
+          }
+          const route = getTamTruScanRoute();
+          if (route) navigate(route);
+        }}
       />
     </>
   );

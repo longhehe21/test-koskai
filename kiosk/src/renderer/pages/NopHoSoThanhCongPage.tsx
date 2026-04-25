@@ -1,15 +1,23 @@
 import '@styles/pages/nop-ho-so-thanh-cong.css';
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { usePageHeader } from '@hooks/usePageHeader';
 import { submitFeedback } from '@services/feedbackService';
+import { getApplication } from '@services/applicationService';
 import { sound } from '@services/soundService';
 import { PrintPreviewModal } from '@components/ui';
 import { fireConfetti } from '@utils/confetti';
 
-// Mã hồ sơ hiện hardcode — sau này lấy từ navigation state hoặc store khi
-// backend trả về mã thật.
-const APPLICATION_CODE = '24.03.15.000124';
+// Domain trang tracker (viết tách biệt, deploy Vercel). Placeholder cho dev —
+// env RENDERER_VITE_TRACKER_URL override khi prod.
+const TRACKER_BASE_URL =
+  (import.meta.env.RENDERER_VITE_TRACKER_URL as string | undefined) ??
+  'https://tracker.kiosk.vn';
+
+// Fallback khi không có appId (vào trang trực tiếp qua navigate từ form submit
+// thành công — mã chưa kịp mount). Sẽ được override bằng trackingCode từ API.
+const FALLBACK_CODE = '24.03.15.000124';
 
 // Auto-redirect sau khi user không tương tác: khác auto-logout toàn cục,
 // trang success KHÔNG đăng xuất — user vừa nộp hồ sơ xong, còn đang trong
@@ -18,20 +26,48 @@ const APPLICATION_CODE = '24.03.15.000124';
 const AUTO_REDIRECT_IDLE_MS = 30_000;
 const AUTO_REDIRECT_COUNTDOWN_MS = 15_000;
 
-// Placeholder QR rects — port nguyên từ UI repo (mô phỏng mã QR hiển thị).
-const QR_RECTS: Array<[number, number, number?]> = [
-  [56, 12, 8], [68, 12, 8], [56, 24, 8],
-  [12, 56, 8], [24, 56, 8], [12, 68, 8],
-  [56, 56, 8], [68, 56, 8], [80, 56, 8],
-  [56, 68, 8], [56, 80, 8], [68, 68, 8], [80, 68, 8], [80, 80, 8],
-  [92, 56, 8], [104, 56, 8], [92, 68, 8], [116, 68, 8],
-  [92, 92, 8], [104, 92, 8], [116, 92, 8],
-  [92, 104, 8], [116, 104, 8], [92, 116, 8], [104, 116, 8],
-  [56, 92, 8], [68, 104, 8], [56, 116, 8], [68, 116, 8],
-];
-
 export default function NopHoSoThanhCongPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Đọc ?appId từ URL — HoSoCuaToiPage điều hướng sang khi user click hồ sơ đã nộp.
+  // Không có appId → vào trang qua flow submit (mã còn trong store hoặc fallback).
+  const appId = useMemo(() => {
+    const id = Number(new URLSearchParams(location.search).get('appId'));
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }, [location.search]);
+
+  const [trackingCode, setTrackingCode] = useState<string>(FALLBACK_CODE);
+  const [procedureName, setProcedureName] = useState<string>('Đăng ký thường trú');
+  const [submittedAtFmt, setSubmittedAtFmt] = useState<string>('');
+
+  // Fetch detail khi có appId — thay trackingCode + procedureName bằng data thật.
+  useEffect(() => {
+    if (!appId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const detail = await getApplication(appId);
+        if (cancelled) return;
+        setTrackingCode(detail.trackingCode);
+        setProcedureName(detail.procedureName);
+        if (detail.submittedAt) {
+          const d = new Date(detail.submittedAt);
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          setSubmittedAtFmt(
+            `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`,
+          );
+        }
+      } catch (err) {
+        console.warn('[NopHoSoThanhCong] fetch detail fail:', (err as Error).message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [appId]);
+
+  // URL trong QR — scan → web tracker riêng. Code nằm trong path, public endpoint
+  // chỉ trả status + timeline (không PII).
+  const trackerUrl = `${TRACKER_BASE_URL}/t/${trackingCode}`;
 
   // rating=0 nghĩa là chưa chọn sao nào; submit disabled đến khi >=1.
   const [rating, setRating] = useState(0);
@@ -115,7 +151,7 @@ export default function NopHoSoThanhCongPage() {
     // Gọi service layer — khi backend sẵn sàng chỉ cần sửa trong feedbackService,
     // component không phải đổi gì. Lỗi để silent + retry button cho đỡ vỡ UX kiosk.
     const result = await submitFeedback({
-      applicationId: APPLICATION_CODE,
+      applicationId: trackingCode,
       ratingScore: rating,
       comment: comment.trim() || undefined,
     });
@@ -177,10 +213,10 @@ export default function NopHoSoThanhCongPage() {
               <div className="nhstc-card-col">
                 <span className="nhstc-card-label">MÃ HỒ SƠ</span>
                 <div className="nhstc-card-value">
-                  <span className="nhstc-code-reveal">
-                    {APPLICATION_CODE.split('').map((ch, i) => (
+                  <span className="nhstc-code-reveal" key={trackingCode}>
+                    {trackingCode.split('').map((ch, i) => (
                       <span
-                        key={i}
+                        key={`${trackingCode}-${i}`}
                         className="nhstc-code-char"
                         style={{ animationDelay: `${i * 45}ms` }}
                       >
@@ -193,7 +229,7 @@ export default function NopHoSoThanhCongPage() {
               <div className="nhstc-card-divider" />
               <div className="nhstc-card-col nhstc-card-col--right">
                 <span className="nhstc-card-label">THỜI GIAN TIẾP NHẬN</span>
-                <span className="nhstc-card-time">15/03/2024 · 14:20</span>
+                <span className="nhstc-card-time">{submittedAtFmt || '—'}</span>
               </div>
             </div>
           </div>
@@ -315,21 +351,14 @@ export default function NopHoSoThanhCongPage() {
 
         <div className="nhstc-right">
           <div className="nhstc-qr-box">
-            <svg className="nhstc-qr-placeholder" width="200" height="200" viewBox="0 0 140 140">
-              <rect width="140" height="140" fill="#ffffff" rx="8" />
-              <rect x="12" y="12" width="36" height="36" rx="4" fill="#1e293b" />
-              <rect x="16" y="16" width="28" height="28" rx="2" fill="#ffffff" />
-              <rect x="22" y="22" width="16" height="16" rx="1" fill="#1e293b" />
-              <rect x="92" y="12" width="36" height="36" rx="4" fill="#1e293b" />
-              <rect x="96" y="16" width="28" height="28" rx="2" fill="#ffffff" />
-              <rect x="102" y="22" width="16" height="16" rx="1" fill="#1e293b" />
-              <rect x="12" y="92" width="36" height="36" rx="4" fill="#1e293b" />
-              <rect x="16" y="96" width="28" height="28" rx="2" fill="#ffffff" />
-              <rect x="22" y="102" width="16" height="16" rx="1" fill="#1e293b" />
-              {QR_RECTS.map(([x, y, size = 8], i) => (
-                <rect key={i} x={x} y={y} width={size} height={size} rx="1" fill="#1e293b" />
-              ))}
-            </svg>
+            <QRCodeSVG
+              value={trackerUrl}
+              size={200}
+              level="M"
+              includeMargin
+              bgColor="#ffffff"
+              fgColor="#1e293b"
+            />
           </div>
           <p className="nhstc-qr-text">Quét mã QR để theo dõi trạng thái hồ sơ trên điện thoại</p>
           <p className="nhstc-qr-hint">Sử dụng Camera hoặc ứng dụng Zalo để quét nhanh mã phía trên.</p>
@@ -340,11 +369,11 @@ export default function NopHoSoThanhCongPage() {
         open={showPrintPreview}
         onClose={() => setShowPrintPreview(false)}
         data={{
-          applicationCode: APPLICATION_CODE,
-          procedureName: 'Đăng ký thường trú',
-          submittedAt: '15/03/2024 · 14:20',
+          applicationCode: trackingCode,
+          procedureName,
+          submittedAt: submittedAtFmt || '—',
           processingDays: 15,
-          expectedResultDate: '30/03/2024',
+          expectedResultDate: '—',
         }}
       />
     </div>

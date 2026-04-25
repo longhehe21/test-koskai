@@ -16,7 +16,12 @@ import {
 } from '@components/ui';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
+import { useDraftLifecycle } from '@hooks/useDraftLifecycle';
+import { DraftResumeGate } from '@components/DraftResumeGate';
+import { useDraftFormStore } from '@store/draftFormStore';
 import { NguoiLuuTruModal } from './tao-thong-bao-luu-tru/NguoiLuuTruModal';
+
+const PROCEDURE_CODE = 'luu-tru';
 
 type AddrType = 'thuong-tru' | 'tam-tru' | 'khac';
 
@@ -61,45 +66,94 @@ function SectionHeader({ no, title }: { no: string; title: string }) {
 }
 
 export default function TaoThongBaoLuuTruPage() {
+  return (
+    <DraftResumeGate procedureCode={PROCEDURE_CODE}>
+      {(loadedAppId) => <TaoThongBaoLuuTruForm key={loadedAppId ?? 'fresh'} />}
+    </DraftResumeGate>
+  );
+}
+
+function TaoThongBaoLuuTruForm() {
   const navigate = useNavigate();
   const user = useCurrentUser();
 
   usePageHeader({ title: 'Tạo thông báo lưu trú' });
 
+  const cachedForm = useMemo(
+    () => (useDraftFormStore.getState().forms[PROCEDURE_CODE] ?? {}) as Record<string, unknown>,
+    [],
+  );
+  const c1 = (cachedForm.section1 ?? {}) as Record<string, unknown>;
+  const c2 = (cachedForm.section2 ?? {}) as Record<string, unknown>;
+  const c3 = (cachedForm.section3 ?? {}) as Record<string, unknown>;
+  const c5 = (cachedForm.section5 ?? {}) as Record<string, unknown>;
+
   // Section I
-  const [s1Province, setS1Province] = useState<DropdownItem | null>(null);
-  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(null);
-  const [s1CoQuan, setS1CoQuan] = useState('Công an Phường Ba Đình');
-  const [s1Sdt, setS1Sdt] = useState('');
+  const [s1Province, setS1Province] = useState<DropdownItem | null>(
+    (c1.province as DropdownItem | null) ?? null,
+  );
+  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(
+    (c1.ward as DropdownItem | null) ?? null,
+  );
+  const [s1CoQuan, setS1CoQuan] = useState((c1.coquan as string) ?? 'Công an Phường Ba Đình');
+  const [s1Sdt, setS1Sdt] = useState((c1.sdt as string) ?? '');
 
   // Section II
-  const [s2AddrType, setS2AddrType] = useState<AddrType>('thuong-tru');
-  const [s2HoTen, setS2HoTen] = useState('');
-  const [s2Sdt, setS2Sdt] = useState('');
-  const [s2Cccd, setS2Cccd] = useState('');
-  const [s2DiaChi, setS2DiaChi] = useState('');
-  const [s2Province, setS2Province] = useState<DropdownItem | null>(null);
-  const [s2Ward, setS2Ward] = useState<DropdownItem | null>(null);
+  const [s2AddrType, setS2AddrType] = useState<AddrType>((c2.addrType as AddrType) ?? 'thuong-tru');
+  const [s2HoTen, setS2HoTen] = useState((c2.hoTen as string) ?? '');
+  const [s2Sdt, setS2Sdt] = useState((c2.sdt as string) ?? '');
+  const [s2Cccd, setS2Cccd] = useState((c2.cccd as string) ?? '');
+  const [s2DiaChi, setS2DiaChi] = useState((c2.diaChi as string) ?? '');
+  const [s2Province, setS2Province] = useState<DropdownItem | null>(
+    (c2.province as DropdownItem | null) ?? null,
+  );
+  const [s2Ward, setS2Ward] = useState<DropdownItem | null>(
+    (c2.ward as DropdownItem | null) ?? null,
+  );
 
   // Section III
-  const [s3LoaiHinh, setS3LoaiHinh] = useState<DropdownItem | null>(null);
-  const [s3TenCoSoInput, setS3TenCoSoInput] = useState('');
-  const [s3TenCoSoSelect, setS3TenCoSoSelect] = useState<DropdownItem | null>(null);
-  const [s3DiaChi, setS3DiaChi] = useState('');
+  const [s3LoaiHinh, setS3LoaiHinh] = useState<DropdownItem | null>(
+    (c3.loaiHinh as DropdownItem | null) ?? null,
+  );
+  const [s3TenCoSoInput, setS3TenCoSoInput] = useState((c3.tenCoSoInput as string) ?? '');
+  const [s3TenCoSoSelect, setS3TenCoSoSelect] = useState<DropdownItem | null>(
+    (c3.tenCoSoSelect as DropdownItem | null) ?? null,
+  );
+  const [s3DiaChi, setS3DiaChi] = useState((c3.diaChi as string) ?? '');
   const isFreeInput = s3LoaiHinh ? FREE_INPUT_NAMES.has(s3LoaiHinh.name) : false;
 
   // Section V
-  const [s5ThongBao, setS5ThongBao] = useState<string[]>([]);
-  const [s5KetQua, setS5KetQua] = useState<DropdownItem | null>(null);
-  const [s5Email, setS5Email] = useState('');
+  const [s5ThongBao, setS5ThongBao] = useState<string[]>((c5.thongBao as string[]) ?? []);
+  const [s5KetQua, setS5KetQua] = useState<DropdownItem | null>(
+    (c5.ketQua as DropdownItem | null) ?? null,
+  );
+  const [s5Email, setS5Email] = useState((c5.email as string) ?? '');
   const showEmail = s5ThongBao.includes('email') || s5KetQua?.code === 'email';
 
   // Commit + modals
-  const [committed, setCommitted] = useState(false);
+  const [committed, setCommitted] = useState((cachedForm.committed as boolean) ?? false);
   const [showThemNguoi, setShowThemNguoi] = useState(false);
   const [showMauPreview, setShowMauPreview] = useState(false);
-  const [showDraft, setShowDraft] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+
+  const buildFormData = () => ({
+    section1: { province: s1Province, ward: s1Ward, coquan: s1CoQuan, sdt: s1Sdt },
+    section2: {
+      addrType: s2AddrType, hoTen: s2HoTen, sdt: s2Sdt, cccd: s2Cccd,
+      diaChi: s2DiaChi, province: s2Province, ward: s2Ward,
+    },
+    section3: {
+      loaiHinh: s3LoaiHinh, tenCoSoInput: s3TenCoSoInput,
+      tenCoSoSelect: s3TenCoSoSelect, diaChi: s3DiaChi,
+    },
+    section5: { thongBao: s5ThongBao, ketQua: s5KetQua, email: s5Email },
+    committed,
+  });
+
+  const {
+    showDraft, setShowDraft, draftTrackingCode,
+    handleSaveDraft, handleConfirmSubmit: doConfirmSubmit,
+  } = useDraftLifecycle({ procedureCode: PROCEDURE_CODE, buildFormData });
 
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = () => {
@@ -140,10 +194,10 @@ export default function TaoThongBaoLuuTruPage() {
     setShowConfirmSubmit(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowConfirmSubmit(false);
     setIsDirty(false);
-    navigate('/nop-ho-so-thanh-cong');
+    await doConfirmSubmit();
   };
 
   return (
@@ -474,7 +528,7 @@ export default function TaoThongBaoLuuTruPage() {
         <FormFooter
           variant="ttbl"
           onBack={() => guard(() => navigate(-1))}
-          onDraft={() => setShowDraft(true)}
+          onDraft={() => void handleSaveDraft()}
           onSubmit={handleSubmit}
           submitEnabled={committed}
         />
@@ -521,6 +575,7 @@ export default function TaoThongBaoLuuTruPage() {
         open={showDraft}
         onClose={() => setShowDraft(false)}
         onList={() => navigate('/ho-so-cua-toi?status=draft')}
+        trackingCode={draftTrackingCode}
       />
 
       <UnsavedChangesModal
@@ -528,7 +583,7 @@ export default function TaoThongBaoLuuTruPage() {
         onClose={cancel}
         onSaveDraft={() => {
           cancel();
-          setShowDraft(true);
+          void handleSaveDraft();
         }}
         onDiscard={proceed}
       />

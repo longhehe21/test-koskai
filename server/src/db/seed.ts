@@ -138,6 +138,27 @@ async function seed() {
           },
         },
         {
+          code: 'ct02-to-khai-viet-kieu',
+          name: 'Tờ khai đăng ký thường trú (Mẫu CT02 — Việt kiều)',
+          required: false,
+          requiredWhen: { branch: 'nuoc-ngoai' },
+          templateUrl: '/assets/mẫu cư trú ct02 mặt trước.svg',
+          recognition: {
+            // CT02 là tờ khai đăng ký thường trú dành cho công dân VN định cư nước
+            // ngoài đã nhập quốc tịch Việt Nam. mustHave để distinct vs CT01.
+            mustHave: ['tờ khai', 'đăng ký thường trú'],
+            shouldHave: [
+              'ct02',
+              'việt nam định cư ở nước ngoài',
+              'hộ chiếu',
+              'nhập cảnh',
+              'cộng hòa xã hội',
+              'độc lập',
+            ],
+            minScore: 0.4,
+          },
+        },
+        {
           code: 'qsdd-giay-chung-nhan-quyen-su-dung-dat',
           name: 'Giấy chứng nhận quyền sử dụng đất',
           required: false,

@@ -1,5 +1,5 @@
 import '@styles/pages/tao-khai-bao-tam-vang.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageHeader } from '@hooks/usePageHeader';
 import {
@@ -10,11 +10,18 @@ import {
   ProvinceWardSelect,
   DraftSavedToast,
   FormFooter,
+  SubmitBlockedModal,
   UnsavedChangesModal,
   type DropdownItem,
 } from '@components/ui';
 import { useCurrentUser } from '@hooks/useCurrentUser';
 import { useUnsavedChangesGuard } from '@hooks/useUnsavedChangesGuard';
+import { useDraftLifecycle } from '@hooks/useDraftLifecycle';
+import { DraftResumeGate } from '@components/DraftResumeGate';
+import { useDraftFormStore } from '@store/draftFormStore';
+import { getTamVangMissingDocs, TAM_VANG_SCAN_ROUTE } from '@utils/validateAttachments';
+
+const PROCEDURE_CODE = 'tam-vang';
 
 type ResidenceType = 'thuong-tru' | 'tam-tru' | 'khac';
 type NoiDenType = 'trong-nuoc' | 'nuoc-ngoai';
@@ -49,44 +56,89 @@ const RESIDENCE_LABELS: Record<ResidenceType, string> = {
 };
 
 export default function TaoKhaiBaoTamVangPage() {
+  return (
+    <DraftResumeGate procedureCode={PROCEDURE_CODE}>
+      {(loadedAppId) => <TaoKhaiBaoTamVangForm key={loadedAppId ?? 'fresh'} />}
+    </DraftResumeGate>
+  );
+}
+
+function TaoKhaiBaoTamVangForm() {
   const navigate = useNavigate();
   const user = useCurrentUser();
 
   usePageHeader({ title: 'Tạo mới khai báo tạm vắng' });
 
+  // Snapshot cache tại mount — DraftResumeGate đảm bảo store đã được hydrate
+  // (từ server nếu ?appId; từ sessionStorage nếu navigate-back).
+  const cachedForm = useMemo(
+    () => (useDraftFormStore.getState().forms[PROCEDURE_CODE] ?? {}) as Record<string, unknown>,
+    [],
+  );
+  const c1 = (cachedForm.section1 ?? {}) as Record<string, unknown>;
+  const c2 = (cachedForm.section2 ?? {}) as Record<string, unknown>;
+  const c3 = (cachedForm.section3 ?? {}) as Record<string, unknown>;
+  const c4 = (cachedForm.section4 ?? {}) as Record<string, unknown>;
+
   // Section I
-  const [residenceType, setResidenceType] = useState<ResidenceType>('thuong-tru');
-  const [s1Province, setS1Province] = useState<DropdownItem | null>(null);
-  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(null);
-  const [s1CoQuan, setS1CoQuan] = useState(`Cơ quan ${user.thuongTru.ward}`);
-  const [s1Sdt, setS1Sdt] = useState('');
+  const [residenceType, setResidenceType] = useState<ResidenceType>(
+    (c1.residenceType as ResidenceType) ?? 'thuong-tru',
+  );
+  const [s1Province, setS1Province] = useState<DropdownItem | null>(
+    (c1.province as DropdownItem | null) ?? null,
+  );
+  const [s1Ward, setS1Ward] = useState<DropdownItem | null>(
+    (c1.ward as DropdownItem | null) ?? null,
+  );
+  const [s1CoQuan, setS1CoQuan] = useState(
+    (c1.coquan as string) ?? `Cơ quan ${user.thuongTru.ward}`,
+  );
+  const [s1Sdt, setS1Sdt] = useState((c1.sdt as string) ?? '');
 
   // Section II
-  const [birthday, setBirthday] = useState(user.ngaySinh);
-  const [gioiTinh, setGioiTinh] = useState<GioiTinh>('Nam');
-  const [s2Province, setS2Province] = useState<DropdownItem | null>(null);
-  const [s2Ward, setS2Ward] = useState<DropdownItem | null>(null);
-  const [s2DiaChi, setS2DiaChi] = useState(user.thuongTru.diaChi);
+  const [birthday, setBirthday] = useState((c2.birthday as string) ?? user.ngaySinh);
+  const [gioiTinh, setGioiTinh] = useState<GioiTinh>((c2.gioiTinh as GioiTinh) ?? 'Nam');
+  const [s2Province, setS2Province] = useState<DropdownItem | null>(
+    (c2.province as DropdownItem | null) ?? null,
+  );
+  const [s2Ward, setS2Ward] = useState<DropdownItem | null>(
+    (c2.ward as DropdownItem | null) ?? null,
+  );
+  const [s2DiaChi, setS2DiaChi] = useState(
+    (c2.diaChi as string) ?? user.thuongTru.diaChi,
+  );
 
   // Section III
-  const [noiDen, setNoiDen] = useState<NoiDenType>('trong-nuoc');
-  const [s3Province, setS3Province] = useState<DropdownItem | null>(null);
-  const [s3Ward, setS3Ward] = useState<DropdownItem | null>(null);
-  const [s3Country, setS3Country] = useState<DropdownItem | null>(null);
-  const [s3DiaChi, setS3DiaChi] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  const [lyDo, setLyDo] = useState('');
+  const [noiDen, setNoiDen] = useState<NoiDenType>(
+    (c3.noiDen as NoiDenType) ?? 'trong-nuoc',
+  );
+  const [s3Province, setS3Province] = useState<DropdownItem | null>(
+    (c3.province as DropdownItem | null) ?? null,
+  );
+  const [s3Ward, setS3Ward] = useState<DropdownItem | null>(
+    (c3.ward as DropdownItem | null) ?? null,
+  );
+  const [s3Country, setS3Country] = useState<DropdownItem | null>(
+    (c3.country as DropdownItem | null) ?? null,
+  );
+  const [s3DiaChi, setS3DiaChi] = useState((c3.diaChi as string) ?? '');
+  const [fromDate, setFromDate] = useState((c3.fromDate as string) ?? '');
+  const [toDate, setToDate] = useState((c3.toDate as string) ?? '');
+  const [lyDo, setLyDo] = useState((c3.lyDo as string) ?? '');
 
   // Section IV
-  const [s4ThongBao, setS4ThongBao] = useState<string[]>([]);
-  const [s4KetQua, setS4KetQua] = useState<DropdownItem | null>(null);
-  const [s4Email, setS4Email] = useState('');
+  const [s4ThongBao, setS4ThongBao] = useState<string[]>(
+    (c4.thongBao as string[]) ?? [],
+  );
+  const [s4KetQua, setS4KetQua] = useState<DropdownItem | null>(
+    (c4.ketQua as DropdownItem | null) ?? null,
+  );
+  const [s4Email, setS4Email] = useState((c4.email as string) ?? '');
   const showEmail = s4ThongBao.includes('email') || s4KetQua?.code === 'email';
 
   // Commit + draft modal
-  const [showDraft, setShowDraft] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [missingDocs, setMissingDocs] = useState<string[]>([]);
 
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = () => {
@@ -94,13 +146,32 @@ export default function TaoKhaiBaoTamVangPage() {
   };
   const { guard, proceed, cancel, isPrompting } = useUnsavedChangesGuard(isDirty);
 
+  // Gom state thành JSON để gửi lên server lưu nháp / nộp
+  const buildFormData = () => ({
+    section1: { residenceType, province: s1Province, ward: s1Ward, coquan: s1CoQuan, sdt: s1Sdt },
+    section2: { birthday, gioiTinh, province: s2Province, ward: s2Ward, diaChi: s2DiaChi },
+    section3: {
+      noiDen, province: s3Province, ward: s3Ward, country: s3Country,
+      diaChi: s3DiaChi, fromDate, toDate, lyDo,
+    },
+    section4: { thongBao: s4ThongBao, ketQua: s4KetQua, email: s4Email },
+  });
+
+  const {
+    showDraft, setShowDraft, draftTrackingCode,
+    persistDraftSilent, handleSaveDraft, handleConfirmSubmit: doConfirmSubmit,
+  } = useDraftLifecycle({ procedureCode: PROCEDURE_CODE, buildFormData });
+
   // Apply residence type → sync S2 + readonly
   useEffect(() => {
     if (residenceType === 'thuong-tru') {
-      // S1 locked to CCCD → user vẫn thấy default (setup ban đầu)
+      // S1 locked to CCCD → restore default Cơ quan của thường trú
+      setS1CoQuan(`Cơ quan ${user.thuongTru.ward}`);
       setS2DiaChi(user.thuongTru.diaChi);
     } else {
+      // Tạm trú/Khác: clear Cơ quan thực hiện (sẽ auto-fill khi user chọn ward)
       // S2 mirrors S1 ward/province, địa chỉ cụ thể để trống
+      setS1CoQuan('');
       setS2DiaChi('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,13 +192,19 @@ export default function TaoKhaiBaoTamVangPage() {
   };
 
   const handleSubmit = () => {
+    const missing = getTamVangMissingDocs();
+    if (missing.length > 0) {
+      setMissingDocs(missing);
+      return;
+    }
+    setMissingDocs([]);
     setShowConfirmSubmit(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowConfirmSubmit(false);
     setIsDirty(false);
-    navigate('/nop-ho-so-thanh-cong');
+    await doConfirmSubmit();
   };
 
   return (
@@ -163,39 +240,43 @@ export default function TaoKhaiBaoTamVangPage() {
               </div>
 
               <div className="tkbtv-row">
-                <div className="tkbtv-field tkbtv-field--half">
-                  <label className="tkbtv-label">
-                    Tỉnh/Thành phố <span className="tkbtv-req">*</span>
-                  </label>
-                  {s1Locked ? (
-                    <input
-                      type="text"
-                      className="tkbtv-input tkbtv-input--locked"
-                      value={user.thuongTru.province}
-                      readOnly
-                    />
-                  ) : (
-                    <ProvinceWardSelect
-                      province={s1Province}
-                      ward={s1Ward}
-                      onProvinceChange={setS1Province}
-                      onWardChange={setS1Ward}
-                      onCoquan={handleS1Coquan}
-                    />
-                  )}
-                </div>
-                {s1Locked && (
-                  <div className="tkbtv-field tkbtv-field--half">
-                    <label className="tkbtv-label">
-                      Xã/Phường/Đặc khu <span className="tkbtv-req">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="tkbtv-input tkbtv-input--locked"
-                      value={user.thuongTru.ward}
-                      readOnly
-                    />
-                  </div>
+                {s1Locked ? (
+                  <>
+                    <div className="tkbtv-field tkbtv-field--half">
+                      <label className="tkbtv-label">
+                        Tỉnh/Thành phố <span className="tkbtv-req">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="tkbtv-input tkbtv-input--locked"
+                        value={user.thuongTru.province}
+                        readOnly
+                      />
+                    </div>
+                    <div className="tkbtv-field tkbtv-field--half">
+                      <label className="tkbtv-label">
+                        Xã/Phường/Đặc khu <span className="tkbtv-req">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="tkbtv-input tkbtv-input--locked"
+                        value={user.thuongTru.ward}
+                        readOnly
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <ProvinceWardSelect
+                    province={s1Province}
+                    ward={s1Ward}
+                    onProvinceChange={setS1Province}
+                    onWardChange={setS1Ward}
+                    onCoquan={handleS1Coquan}
+                    provinceLabel="Tỉnh/Thành phố"
+                    wardLabel="Xã/Phường/Đặc khu"
+                    provinceRequired
+                    wardRequired
+                  />
                 )}
               </div>
 
@@ -327,6 +408,11 @@ export default function TaoKhaiBaoTamVangPage() {
                     ward={s2Ward}
                     onProvinceChange={setS2Province}
                     onWardChange={setS2Ward}
+                    provinceLabel="Tỉnh/Thành phố"
+                    wardLabel="Xã/Phường/Đặc khu"
+                    provinceRequired
+                    wardRequired
+                    labelClassName="tkbtv-label--sub"
                   />
                 )}
               </div>
@@ -376,6 +462,10 @@ export default function TaoKhaiBaoTamVangPage() {
                       ward={s3Ward}
                       onProvinceChange={setS3Province}
                       onWardChange={setS3Ward}
+                      provinceLabel="Tỉnh/Thành phố"
+                      wardLabel="Xã/Phường/Đặc khu"
+                      provinceRequired
+                      wardRequired
                     />
                   </div>
                   <div className="tkbtv-field">
@@ -501,7 +591,7 @@ export default function TaoKhaiBaoTamVangPage() {
 
         <FormFooter
           onBack={() => guard(() => navigate(-1))}
-          onDraft={() => setShowDraft(true)}
+          onDraft={() => void handleSaveDraft()}
           onSubmit={handleSubmit}
         />
       </div>
@@ -511,6 +601,7 @@ export default function TaoKhaiBaoTamVangPage() {
         onClose={() => setShowDraft(false)}
         listLabel="Xem danh sách hồ sơ"
         onList={() => navigate('/ho-so-cua-toi?status=draft')}
+        trackingCode={draftTrackingCode}
       />
 
       <UnsavedChangesModal
@@ -518,7 +609,7 @@ export default function TaoKhaiBaoTamVangPage() {
         onClose={cancel}
         onSaveDraft={() => {
           cancel();
-          setShowDraft(true);
+          void handleSaveDraft();
         }}
         onDiscard={proceed}
       />
@@ -528,6 +619,24 @@ export default function TaoKhaiBaoTamVangPage() {
         onCancel={() => setShowConfirmSubmit(false)}
         onConfirm={handleConfirmSubmit}
         title="Xác nhận nộp hồ sơ khai báo tạm vắng"
+      />
+
+      <SubmitBlockedModal
+        open={missingDocs.length > 0}
+        missingDocs={missingDocs}
+        onClose={() => setMissingDocs([])}
+        onSaveDraft={() => {
+          setMissingDocs([]);
+          void handleSaveDraft();
+        }}
+        onGoBack={async () => {
+          // Auto-save trước → user scan xong quay lại form vẫn thấy data đã nhập
+          setMissingDocs([]);
+          try { await persistDraftSilent(); } catch (err) {
+            console.warn('[TamVang] back-save fail:', (err as Error).message);
+          }
+          navigate(TAM_VANG_SCAN_ROUTE);
+        }}
       />
     </>
   );
